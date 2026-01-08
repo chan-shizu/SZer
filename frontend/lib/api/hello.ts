@@ -3,8 +3,7 @@ type GetHelloResponse = {
 };
 
 export async function getHello(): Promise<GetHelloResponse> {
-  const url = process.env.API_BASE_URL || "http://localhost:8080";
-  console.log("Fetching from URL:", url);
+  const url = process.env.API_BASE_URL || "http://backend:8080";
 
   const res = await fetch(url, {
     method: "GET",

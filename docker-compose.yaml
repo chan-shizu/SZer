@@ -67,12 +67,21 @@ services:
       CHOKIDAR_USEPOLLING: "true"
       CHOKIDAR_INTERVAL: "100"
 
-  init:
-    image: alpine:3.18
-    container_name: szer_init
-    volumes:
-      - ./minio:/host/file_bucket
-    command: sh -c "mkdir -p /host/file_bucket/video /host/file_bucket/thumbnail"
+  minio_init:
+    image: minio/mc:latest
+    container_name: szer_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3 &&
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/video &&
+      mc mb --ignore-existing local/thumbnail &&
+      mc anonymous set public local/video &&
+      mc anonymous set public local/thumbnail
+      "
     restart: "no"
 
 volumes:

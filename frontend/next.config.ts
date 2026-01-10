@@ -1,7 +1,13 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  turbopack: {},
+  webpack: (config) => {
+    config.watchOptions = {
+      poll: 300,
+      aggregateTimeout: 300,
+    };
+    return config;
+  },
 };
 
 export default nextConfig;

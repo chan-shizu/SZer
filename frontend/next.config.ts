@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   turbopack: {},
-  webpack: (config) => {
+  webpack: (config: any) => {
     config.watchOptions = {
       poll: 300,
       aggregateTimeout: 300,

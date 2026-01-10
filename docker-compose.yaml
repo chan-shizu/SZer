@@ -25,7 +25,7 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
-      - minio_data:/data
+      - ./minio:/data
     command: minio server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -64,6 +64,14 @@ services:
       - /app/node_modules
     environment:
       NODE_ENV: development
+
+  init:
+    image: alpine:3.18
+    container_name: szer_init
+    volumes:
+      - ./minio:/host/file_bucket
+    command: sh -c "mkdir -p /host/file_bucket/video /host/file_bucket/thumbnail"
+    restart: "no"
 
 volumes:
   postgres_data:

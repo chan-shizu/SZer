@@ -3,7 +3,7 @@
 import React from "react";
 
 export default function Page() {
-  const videoUrl = `${process.env.NEXT_PUBLIC_S3_ENDPOINT ?? ""}/video/ReInventAI.mp4`;
+  const videoUrl = `${process.env.NEXT_PUBLIC_S3_VIDEO_BUCKET_ENDPOINT ?? ""}/ReInventAI.mp4`;
 
   return (
     <main style={{ display: "flex", justifyContent: "center", padding: "2rem" }}>

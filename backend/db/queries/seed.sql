@@ -1,0 +1,8 @@
+-- Deprecated: this file is kept as a placeholder.
+-- Queries were split into per-domain files:
+--   - category_tags.sql
+--   - performers.sql
+--   - videos.sql
+--   - video_category_tags.sql
+--   - video_performers.sql
+--   - comments.sql

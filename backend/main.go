@@ -1,23 +1,37 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"log"
 	"os"
 
-	"github.com/gin-gonic/gin"
+	"github.com/chan-shizu/SZer/db"
+	"github.com/chan-shizu/SZer/internal/dbconn"
+	"github.com/chan-shizu/SZer/internal/router"
+	"github.com/joho/godotenv"
 )
 
 func main() {
-	router := gin.Default()
+	err := godotenv.Load(".env")
+	// もし err がnilではないなら、"読み込み出来ませんでした"が出力されます。
+	if err != nil {
+		fmt.Printf("読み込み出来ませんでした: %v", err)
+	} 
 
-	router.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "Hello World!!!!",
-		})
-	})
+	ctx := context.Background()
+	conn, err := dbconn.Open(ctx)
+	if err != nil {
+		log.Fatalf("failed to connect database: %v", err)
+	}
+	defer conn.Close()
 
-    port := os.Getenv("PORT")
-    if port == "" {
-        port = "8080"
-    }
-    router.Run(":" + port)
+	q := db.New(conn)
+	r := router.NewRouter(q)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	r.Run(":" + port)
 }

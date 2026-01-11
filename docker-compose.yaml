@@ -44,13 +44,16 @@ services:
       PORT: 8080
       ENV: development
       DATABASE_URL: postgres://dev_user:dev_password@postgres:5432/szer_dev
+      AIR_WATCHER_TYPE: polling
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend:/app
       - /app/tmp
     depends_on:
       postgres:
         condition: service_healthy
-    command: air
+    command: ["/go/bin/air", "-c", ".air.toml"]
 
   frontend:
     build:
@@ -78,9 +81,9 @@ services:
       sleep 3 &&
       mc alias set local http://minio:9000 minioadmin minioadmin &&
       mc mb --ignore-existing local/video &&
-      mc mb --ignore-existing local/thumbnail &&
+      mc mb --ignore-existing local/public-file &&
       mc anonymous set public local/video &&
-      mc anonymous set public local/thumbnail
+      mc anonymous set public local/public-file
       "
     restart: "no"
 

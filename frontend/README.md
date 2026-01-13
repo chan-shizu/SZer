@@ -16,6 +16,25 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Auth (better-auth)
+
+This project uses `better-auth` for email/password auth, but database schema is managed by Go (golang-migrate).
+
+- API routes are mounted under `/api/auth/*` via the Next route handler.
+- DB tables for better-auth must be created/updated via Go migrations.
+- To generate the expected Postgres DDL (for comparing/updating Go migrations), run:
+
+```bash
+npm run auth:ddl
+```
+
+Common endpoints:
+
+- `POST /api/auth/sign-up/email`
+- `POST /api/auth/sign-in/email`
+- `POST /api/auth/sign-out`
+- `GET /api/auth/get-session`
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

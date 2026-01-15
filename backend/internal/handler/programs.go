@@ -11,7 +11,7 @@ import (
 )
 
 type Handler struct {
-	programs *usecase.ProgramsUsecase
+	programs      *usecase.ProgramsUsecase
 }
 
 func New(programs *usecase.ProgramsUsecase) *Handler {
@@ -38,5 +38,29 @@ func (h *Handler) ProgramDetails(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"program": program,
+	})
+}
+
+func (h *Handler) ListPrograms(c *gin.Context) {
+	title := c.Query("title")
+	tagIDsStr := c.QueryArray("tag_ids")
+	tagIDs := make([]int64, 0, len(tagIDsStr))
+	for _, v := range tagIDsStr {
+		id, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tag_ids"})
+			return
+		}
+		tagIDs = append(tagIDs, id)
+	}
+
+	programs, err := h.programs.ListPrograms(c.Request.Context(), title, tagIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list programs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"programs": programs,
 	})
 }

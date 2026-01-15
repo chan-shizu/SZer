@@ -1,4 +1,4 @@
-import { getProgramDetail } from "@/lib/api/program_detail";
+import { getProgramDetail } from "@/lib/api/programs";
 import { Video } from "./components/Video";
 import { Title } from "./components/Title";
 import { Description } from "./components/Description";

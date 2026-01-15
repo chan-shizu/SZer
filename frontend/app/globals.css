@@ -1,1 +1,25 @@
 @import "tailwindcss";
+
+@theme {
+  /*
+    共通カラー定義
+    使用方法: className="bg-primary text-primary-foreground" など
+  */
+  --color-primary: #3b82f6; /* Blue-500 */
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #64748b; /* Slate-500 */
+  --color-secondary-foreground: #ffffff;
+
+  --color-accent: #8b5cf6; /* Violet-500 */
+  --color-accent-foreground: #ffffff;
+
+  --color-destructive: #ef4444; /* Red-500 */
+  --color-destructive-foreground: #ffffff;
+
+  --color-background: #ffffff;
+  --color-foreground: #020617; /* Slate-950 */
+
+  --color-muted: #f1f5f9; /* Slate-100 */
+  --color-muted-foreground: #64748b; /* Slate-500 */
+}

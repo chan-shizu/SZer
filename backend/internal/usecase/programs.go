@@ -26,7 +26,16 @@ type ProgramDetailsPerformer struct {
 	ImageUrl    *string `json:"image_url"`
 }
 
-type ProgramDetails struct {
+type programDetailsPerformerRaw struct {
+	ID            int64   `json:"id"`
+	FirstName     string  `json:"first_name"`
+	LastName      string  `json:"last_name"`
+	FirstNameKana string  `json:"first_name_kana"`
+	LastNameKana  string  `json:"last_name_kana"`
+	ImagePath     *string `json:"image_path"`
+}
+
+type ProgramDetail struct {
 	ProgramID        int64                       `json:"program_id"`
 	Title            string                      `json:"title"`
 	VideoURL         string                      `json:"video_url"`
@@ -38,13 +47,11 @@ type ProgramDetails struct {
 	Performers       []ProgramDetailsPerformer   `json:"performers"`
 }
 
-type programDetailsPerformerRaw struct {
-	ID            int64   `json:"id"`
-	FirstName     string  `json:"first_name"`
-	LastName      string  `json:"last_name"`
-	FirstNameKana string  `json:"first_name_kana"`
-	LastNameKana  string  `json:"last_name_kana"`
-	ImagePath     *string `json:"image_path"`
+type ProgramListItem struct {
+	ProgramID        int64                       `json:"program_id"`
+	Title            string                      `json:"title"`
+	ThumbnailUrl    *string                     `json:"thumbnail_url"`
+	CategoryTags     []ProgramDetailsCategoryTag `json:"category_tags"`
 }
 
 type ProgramsUsecase struct {
@@ -55,32 +62,32 @@ func NewProgramsUsecase(q *db.Queries) *ProgramsUsecase {
 	return &ProgramsUsecase{q: q}
 }
 
-func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, id int64) (ProgramDetails, error) {
+func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, id int64) (ProgramDetail, error) {
 	program, err := u.q.GetProgramByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return ProgramDetails{}, ErrProgramNotFound
+			return ProgramDetail{}, ErrProgramNotFound
 		}
-		return ProgramDetails{}, err
+		return ProgramDetail{}, err
 	}
 
 	categoryTagsJSON, err := normalizeJSONBytes(program.CategoryTags)
 	if err != nil {
-		return ProgramDetails{}, err
+		return ProgramDetail{}, err
 	}
 	performersJSON, err := normalizeJSONBytes(program.Performers)
 	if err != nil {
-		return ProgramDetails{}, err
+		return ProgramDetail{}, err
 	}
 
 	var categoryTags []ProgramDetailsCategoryTag
 	if err := json.Unmarshal(categoryTagsJSON, &categoryTags); err != nil {
-		return ProgramDetails{}, err
+		return ProgramDetail{}, err
 	}
 
 	var performersRaw []programDetailsPerformerRaw
 	if err := json.Unmarshal(performersJSON, &performersRaw); err != nil {
-		return ProgramDetails{}, err
+		return ProgramDetail{}, err
 	}
 
 	performers := make([]ProgramDetailsPerformer, 0, len(performersRaw))
@@ -93,7 +100,7 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, id int64) (Prog
 		})
 	}
 
-	resp := ProgramDetails{
+	resp := ProgramDetail{
 		ProgramID:        program.ProgramID,
 		Title:            program.Title,
 		VideoURL:         buildVideoURL(program.VideoPath),
@@ -106,6 +113,45 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, id int64) (Prog
 	}
 	return resp, nil
 }
+
+func (u *ProgramsUsecase) ListPrograms(ctx context.Context, title string, tagIDs []int64) ([]ProgramListItem, error) {
+	arg := db.GetProgramsParams{}
+	if title != "" {
+		arg.Title = sql.NullString{String: title, Valid: true}
+	}
+	if len(tagIDs) > 0 {
+		arg.TagIds = tagIDs
+	}
+
+	programs, err := u.q.GetPrograms(ctx, arg)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []ProgramListItem
+	for _, program := range programs {
+		categoryTagsJSON, err := normalizeJSONBytes(program.CategoryTags)
+		if err != nil {
+			return nil, err
+		}
+		var categoryTags []ProgramDetailsCategoryTag
+		if err := json.Unmarshal(categoryTagsJSON, &categoryTags); err != nil {
+			return nil, err // またはログを出して空配列にするなど、エラーハンドリングポリシーによる
+		}
+
+		results = append(results, ProgramListItem{
+			ProgramID:     program.ProgramID,
+			Title:         program.Title,
+			ThumbnailUrl:  buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
+			CategoryTags:  categoryTags,
+		})
+	}
+
+	return results, nil
+}
+
+
+// private functions
 
 func buildVideoURL(videoPath string) string {
 	if strings.HasPrefix(videoPath, "http://") || strings.HasPrefix(videoPath, "https://") {

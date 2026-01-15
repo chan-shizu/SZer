@@ -54,7 +54,7 @@ func main() {
 	}
 
 	// Seed category tags
-	tagNames := []string{"音楽", "グルメ", "その他"}
+	tagNames := []string{"音楽", "お笑い", "グルメ", "その他"}
 	var tags []db.CategoryTag
 	for _, n := range tagNames {
 		t, err := q.CreateCategoryTag(ctx, n)
@@ -77,38 +77,65 @@ func main() {
 		performers = append(performers, perf)
 	}
 
-	// Seed a sample video
-	
-	vidParams := db.CreateProgramParams{
-		Title:     "面白コメント",
-		VideoPath: "ReInventAI.mp4",
-		ThumbnailPath: sql.NullString{String: "thumbnail/sample.jpg", Valid: true},
-		Description: sql.NullString{String: "This is a sample seeded video.", Valid: true},
+	// Seed sample videos
+	programParamsList := []db.CreateProgramParams{
+		{
+			Title:         "所沢の車全部壊してみた！",
+			VideoPath:     "ReInventAI.mp4",
+			ThumbnailPath: sql.NullString{String: "thumbnail/sample.jpg", Valid: true},
+			Description:   sql.NullString{String: "This is a sample seeded video.", Valid: true},
+		},
+		{
+			Title:         "美味しいラーメンの作り方",
+			VideoPath:     "ReInventAI.mp4",
+			ThumbnailPath: sql.NullString{String: "thumbnail/sample.jpg", Valid: true},
+			Description:   sql.NullString{String: "本格的なラーメンのレシピを紹介します。", Valid: true},
+		},
+		{
+			Title:         "ギター弾き語りライブ",
+			VideoPath:     "ReInventAI.mp4",
+			ThumbnailPath: sql.NullString{String: "thumbnail/sample.jpg", Valid: true},
+			Description:   sql.NullString{String: "週末のライブ映像です。", Valid: true},
+		},
+		{
+			Title:         "お笑いライブ2024",
+			VideoPath:     "ReInventAI.mp4",
+			ThumbnailPath: sql.NullString{String: "thumbnail/sample.jpg", Valid: true},
+			Description:   sql.NullString{String: "最新のお笑いライブ映像をお届けします。", Valid: true},
+		},
 	}
 
-	program, err := q.CreateProgram(ctx, vidParams)
-	if err != nil {
-		log.Fatalf("failed to create video: %v", err)
-	}
-
-	// Link tags to video
-	for _, t := range tags {
-		if err := q.CreateProgramCategoryTag(ctx, db.CreateProgramCategoryTagParams{ProgramID: program.ID, TagID: t.ID}); err != nil {
-			log.Fatalf("failed to link tag %d to video %d: %v", t.ID, program.ID, err)
+	for i, vidParams := range programParamsList {
+		program, err := q.CreateProgram(ctx, vidParams)
+		if err != nil {
+			log.Fatalf("failed to create video: %v", err)
 		}
-	}
 
-	// Link performers to video
-	for _, p := range performers {
-		if err := q.CreateProgramPerformer(ctx, db.CreateProgramPerformerParams{ProgramID: program.ID, PerformerID: p.ID}); err != nil {
-			log.Fatalf("failed to link performer %d to video %d: %v", p.ID, program.ID, err)
+		// Link tags to video
+		limit := i + 1
+		if limit > len(tags) {
+			limit = len(tags)
 		}
+		for _, t := range tags[:limit] {
+			if err := q.CreateProgramCategoryTag(ctx, db.CreateProgramCategoryTagParams{ProgramID: program.ID, TagID: t.ID}); err != nil {
+				log.Fatalf("failed to link tag %d to video %d: %v", t.ID, program.ID, err)
+			}
+		}
+
+		// Link performers to video
+		for _, p := range performers {
+			if err := q.CreateProgramPerformer(ctx, db.CreateProgramPerformerParams{ProgramID: program.ID, PerformerID: p.ID}); err != nil {
+				log.Fatalf("failed to link performer %d to video %d: %v", p.ID, program.ID, err)
+			}
+		}
+
+		// Add a comment
+		if _, err := q.CreateComment(ctx, db.CreateCommentParams{ProgramID: program.ID, Content: "Great video!"}); err != nil {
+			log.Fatalf("failed to create comment: %v", err)
+		}
+
+		log.Printf("seed created video id=%d, title=%s", program.ID, vidParams.Title)
 	}
 
-	// Add a comment
-	if _, err := q.CreateComment(ctx, db.CreateCommentParams{ProgramID: program.ID, Content: "Great video!"}); err != nil {
-		log.Fatalf("failed to create comment: %v", err)
-	}
-
-	log.Printf("seed completed: created video id=%d", program.ID)
+	log.Println("seed completed")
 }

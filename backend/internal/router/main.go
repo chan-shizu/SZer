@@ -13,6 +13,7 @@ func NewRouter(q *db.Queries) *gin.Engine {
 	h := handler.New(programsUC)
 
 	router.GET("/programs/:id", h.ProgramDetails)
+	router.GET("/programs", h.ListPrograms)
 	
 	return router
 }

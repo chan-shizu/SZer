@@ -26,6 +26,17 @@ export type GetProgramDetailResponse = {
   program: ProgramDetails;
 };
 
+export type ProgramListItem = {
+  program_id: number;
+  title: string;
+  thumbnail_url: string | null;
+  category_tags: ProgramDetailsCategoryTag[];
+};
+
+export type GetProgramsResponse = {
+  programs: ProgramListItem[];
+};
+
 import { backendFetchJson } from "./server";
 
 export async function getProgramDetail(id: number | string): Promise<GetProgramDetailResponse> {
@@ -33,4 +44,22 @@ export async function getProgramDetail(id: number | string): Promise<GetProgramD
   return backendFetchJson<GetProgramDetailResponse>(`/programs/${encodedId}`, { method: "GET" });
 }
 
-export default getProgramDetail;
+export async function getPrograms(title?: string, tagIds?: Array<number | string>): Promise<GetProgramsResponse> {
+  const params = new URLSearchParams();
+  if (title) {
+    params.set("title", title);
+  }
+
+  if (tagIds) {
+    for (const id of tagIds) {
+      const v = String(id);
+      if (v) {
+        params.append("tag_ids", v);
+      }
+    }
+  }
+
+  const queryString = params.toString();
+  const path = queryString ? `/programs?${queryString}` : "/programs";
+  return backendFetchJson<GetProgramsResponse>(path, { method: "GET" });
+}

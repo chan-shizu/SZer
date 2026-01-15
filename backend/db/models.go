@@ -9,6 +9,22 @@ import (
 	"time"
 )
 
+type Account struct {
+	ID                    string         `json:"id"`
+	AccountId             string         `json:"accountId"`
+	ProviderId            string         `json:"providerId"`
+	UserId                string         `json:"userId"`
+	AccessToken           sql.NullString `json:"accessToken"`
+	RefreshToken          sql.NullString `json:"refreshToken"`
+	IdToken               sql.NullString `json:"idToken"`
+	AccessTokenExpiresAt  sql.NullTime   `json:"accessTokenExpiresAt"`
+	RefreshTokenExpiresAt sql.NullTime   `json:"refreshTokenExpiresAt"`
+	Scope                 sql.NullString `json:"scope"`
+	Password              sql.NullString `json:"password"`
+	CreatedAt             time.Time      `json:"createdAt"`
+	UpdatedAt             time.Time      `json:"updatedAt"`
+}
+
 type CategoryTag struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
@@ -53,4 +69,34 @@ type ProgramCategoryTag struct {
 type ProgramPerformer struct {
 	ProgramID   int64 `json:"program_id"`
 	PerformerID int64 `json:"performer_id"`
+}
+
+type Session struct {
+	ID        string         `json:"id"`
+	ExpiresAt time.Time      `json:"expiresAt"`
+	Token     string         `json:"token"`
+	CreatedAt time.Time      `json:"createdAt"`
+	UpdatedAt time.Time      `json:"updatedAt"`
+	IpAddress sql.NullString `json:"ipAddress"`
+	UserAgent sql.NullString `json:"userAgent"`
+	UserId    string         `json:"userId"`
+}
+
+type User struct {
+	ID            string         `json:"id"`
+	Name          string         `json:"name"`
+	Email         string         `json:"email"`
+	EmailVerified bool           `json:"emailVerified"`
+	Image         sql.NullString `json:"image"`
+	CreatedAt     time.Time      `json:"createdAt"`
+	UpdatedAt     time.Time      `json:"updatedAt"`
+}
+
+type Verification struct {
+	ID         string    `json:"id"`
+	Identifier string    `json:"identifier"`
+	Value      string    `json:"value"`
+	ExpiresAt  time.Time `json:"expiresAt"`
+	CreatedAt  time.Time `json:"createdAt"`
+	UpdatedAt  time.Time `json:"updatedAt"`
 }

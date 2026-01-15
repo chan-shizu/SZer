@@ -9,6 +9,8 @@ import (
 	"context"
 	"database/sql"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 const createProgram = `-- name: CreateProgram :one
@@ -120,4 +122,77 @@ func (q *Queries) GetProgramByID(ctx context.Context, id int64) (GetProgramByIDR
 		&i.Performers,
 	)
 	return i, err
+}
+
+const getPrograms = `-- name: GetPrograms :many
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path,
+  COALESCE(
+    jsonb_agg(DISTINCT jsonb_build_object(
+      'id', ct.id,
+      'name', ct.name
+    )) FILTER (WHERE ct.id IS NOT NULL),
+    '[]'::jsonb
+  ) AS category_tags
+FROM programs p
+LEFT JOIN program_category_tags pct ON p.id = pct.program_id
+LEFT JOIN category_tags ct ON pct.tag_id = ct.id
+WHERE
+  ($1::text IS NULL OR p.title ILIKE '%' || $1::text || '%')
+  AND (
+    $2::bigint[] IS NULL
+    OR p.id IN (
+      SELECT pct2.program_id
+      FROM program_category_tags pct2
+      WHERE pct2.tag_id = ANY($2::bigint[])
+      GROUP BY pct2.program_id
+      HAVING COUNT(DISTINCT pct2.tag_id) = array_length($2::bigint[], 1)
+    )
+  )
+GROUP BY
+  p.id,
+  p.title,
+  p.thumbnail_path
+`
+
+type GetProgramsParams struct {
+	Title  sql.NullString `json:"title"`
+	TagIds []int64        `json:"tag_ids"`
+}
+
+type GetProgramsRow struct {
+	ProgramID     int64          `json:"program_id"`
+	Title         string         `json:"title"`
+	ThumbnailPath sql.NullString `json:"thumbnail_path"`
+	CategoryTags  interface{}    `json:"category_tags"`
+}
+
+func (q *Queries) GetPrograms(ctx context.Context, arg GetProgramsParams) ([]GetProgramsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPrograms, arg.Title, pq.Array(arg.TagIds))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetProgramsRow
+	for rows.Next() {
+		var i GetProgramsRow
+		if err := rows.Scan(
+			&i.ProgramID,
+			&i.Title,
+			&i.ThumbnailPath,
+			&i.CategoryTags,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

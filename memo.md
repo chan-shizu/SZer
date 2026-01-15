@@ -31,3 +31,9 @@ migrate -path db/migrations -database "postgres://dev_user:dev_password@postgres
 ```
 railway run migrate -path backend/db/migrations -database "[接続のurl]" up
 ```
+
+## sqlc
+
+```
+sqlc generate
+```

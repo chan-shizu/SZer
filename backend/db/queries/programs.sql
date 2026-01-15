@@ -50,3 +50,35 @@ GROUP BY
   p.description,
   p.created_at,
   p.updated_at;
+
+-- name: GetPrograms :many
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path,
+  COALESCE(
+    jsonb_agg(DISTINCT jsonb_build_object(
+      'id', ct.id,
+      'name', ct.name
+    )) FILTER (WHERE ct.id IS NOT NULL),
+    '[]'::jsonb
+  ) AS category_tags
+FROM programs p
+LEFT JOIN program_category_tags pct ON p.id = pct.program_id
+LEFT JOIN category_tags ct ON pct.tag_id = ct.id
+WHERE
+  (sqlc.narg('title')::text IS NULL OR p.title ILIKE '%' || sqlc.narg('title')::text || '%')
+  AND (
+    sqlc.narg('tag_ids')::bigint[] IS NULL
+    OR p.id IN (
+      SELECT pct2.program_id
+      FROM program_category_tags pct2
+      WHERE pct2.tag_id = ANY(sqlc.narg('tag_ids')::bigint[])
+      GROUP BY pct2.program_id
+      HAVING COUNT(DISTINCT pct2.tag_id) = array_length(sqlc.narg('tag_ids')::bigint[], 1)
+    )
+  )
+GROUP BY
+  p.id,
+  p.title,
+  p.thumbnail_path;

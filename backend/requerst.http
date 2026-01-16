@@ -1,8 +1,48 @@
-### Hello World API
+### (Optional) Sign in to get better-auth cookies
+### 1) Run this request.
+### 2) Copy `Set-Cookie` values (only the `name=value` parts) and paste into @cookie below.
+###    Example: better-auth.session_token=...; better-auth.csrf_token=...
+###
+### NOTE: Backend auth is cookie-based (it verifies via Next.js GET /api/auth/get-session).
+
+@email = sample@example.com
+@password = P@ssw0rd
+@origin = http://localhost:3000
+
+# Paste cookies here after sign-in (Cookie header format: ONLY name=value pairs)
+# ✅ OK:   better-auth.session_token=...; better-auth.csrf_token=...
+# ❌ NG:   ...; Max-Age=...; Path=/; HttpOnly; SameSite=Lax  (those are Set-Cookie attributes, not Cookie header)
+@cookie = 
+
+# @name signIn
+POST http://localhost:3000/api/auth/sign-in/email
+Content-Type: application/json
+Origin: {{origin}}
+Referer: {{origin}}/
+
+{
+	"email": "{{email}}",
+	"password": "{{password}}"
+}
+
+### Sign out (requires auth cookie)
+POST http://localhost:3000/api/auth/sign-out
+Content-Type: application/json
+Origin: {{origin}}
+Referer: {{origin}}/
+Cookie: {{cookie}}
+
+{}
+
+### Hello World API (requires auth cookie)
 GET http://localhost:8080/
+Cookie: {{cookie}}
 
 ### 番組詳細
 GET http://localhost:8080/programs/1
+Cookie: {{cookie}}
 
 ### 番組一覧
 GET http://localhost:8080/programs?tag_ids=3
+Cookie: {{cookie}}
+

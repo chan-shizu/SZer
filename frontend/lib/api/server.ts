@@ -1,5 +1,7 @@
 import "server-only";
 
+import { headers as nextHeaders } from "next/headers";
+
 import { ApiError } from "./error";
 
 function normalizeBaseUrl(url: string): string {
@@ -24,6 +26,21 @@ export async function backendFetch(path: string, init: RequestInit = {}): Promis
   const headers = new Headers(init.headers);
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
+  }
+
+  // Forward incoming request cookies (better-auth session) to the backend.
+  // This is required because Next server-to-server fetch does not automatically
+  // include browser cookies.
+  if (!headers.has("Cookie")) {
+    try {
+      const reqHeaders = await nextHeaders();
+      const cookie = reqHeaders.get("cookie");
+      if (cookie) {
+        headers.set("Cookie", cookie);
+      }
+    } catch {
+      // `headers()` throws when called outside a request context (e.g. build time).
+    }
   }
 
   return fetch(url, {

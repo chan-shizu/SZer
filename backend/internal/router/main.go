@@ -16,6 +16,7 @@ func NewRouter(q *db.Queries) *gin.Engine {
 	// Require better-auth session for backend APIs.
 	router.Use(middleware.RequireAuth())
 
+	router.GET("/top", h.Top)
 	router.GET("/programs/:id", h.ProgramDetails)
 	router.GET("/programs", h.ListPrograms)
 	

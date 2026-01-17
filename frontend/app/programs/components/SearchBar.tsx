@@ -19,7 +19,7 @@ export const SearchBar = ({}) => {
     }
   }, [searchParams]);
 
-  function updateParams(term: string, nextTagIds?: number[]) {
+  function updateParams(term: string) {
     const params = new URLSearchParams(searchParams);
     if (term) {
       params.set("title", term);

@@ -1,8 +1,35 @@
-export default function Home() {
+import { getTopPrograms } from "@/lib/api/programs";
+import { ApiError } from "@/lib/api/error";
+import { redirect } from "next/navigation";
+import { TopProgramCard } from "./components/TopProgramCard";
+
+export const dynamic = "force-dynamic";
+
+export default async function TopPage() {
+  let programs: Awaited<ReturnType<typeof getTopPrograms>>["programs"];
+  try {
+    ({ programs } = await getTopPrograms());
+  } catch (err) {
+    if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+      redirect("/login");
+    }
+    throw err;
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <h1 className="text-5xl font-extrabold text-zinc-900 dark:text-zinc-100 sm:text-6xl">Welcome to top page5</h1>
+      <main className="flex min-h-screen w-full max-w-3xl flex-col py-12 px-4 bg-white dark:bg-black sm:px-6 space-y-10">
+        <section>
+          <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">新着番組</h1>
+
+          <div className="mt-4 -mx-4 px-4 overflow-x-auto no-scrollbar">
+            <div className="flex gap-4 snap-x snap-mandatory">
+              {programs.map((program) => (
+                <TopProgramCard key={program.program_id} program={program} />
+              ))}
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

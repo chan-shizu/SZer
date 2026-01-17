@@ -45,6 +45,9 @@ services:
       ENV: development
       DATABASE_URL: postgres://dev_user:dev_password@postgres:5432/szer_dev
       BETTER_AUTH_URL: http://frontend:3000
+      # next/image optimization runs inside the frontend container.
+      # Use host-mapped MinIO so the Next server can fetch originals.
+      S3_PUBLIC_FILE_BUCKET_ENDPOINT: http://host.docker.internal:9000/public-file
       AIR_WATCHER_TYPE: polling
     env_file:
       - ./backend/.env

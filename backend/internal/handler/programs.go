@@ -64,3 +64,15 @@ func (h *Handler) ListPrograms(c *gin.Context) {
 		"programs": programs,
 	})
 }
+
+func (h *Handler) Top(c *gin.Context) {
+	programs, err := h.programs.ListTopPrograms(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get top programs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"programs": programs,
+	})
+}

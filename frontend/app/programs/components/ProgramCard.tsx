@@ -1,5 +1,6 @@
 import { ProgramListItem } from "@/lib/api/programs";
 import Link from "next/link";
+import Image from "next/image";
 
 type Props = { program: ProgramListItem };
 
@@ -30,7 +31,9 @@ export const ProgramCard = ({ program }: Props) => {
       </div>
 
       {program.thumbnail_url ? (
-        <img src={program.thumbnail_url} alt={program.title} className="w-32 h-16 rounded object-cover" />
+        <div className="relative w-32 h-16">
+          <Image src={program.thumbnail_url} alt={program.title} fill sizes="128px" className="rounded object-cover" />
+        </div>
       ) : (
         <div className="">
           <span className="text-foreground">No Image</span>

@@ -54,6 +54,12 @@ type ProgramListItem struct {
 	CategoryTags     []ProgramDetailsCategoryTag `json:"category_tags"`
 }
 
+type TopProgramItem struct {
+	ProgramID     int64   `json:"program_id"`
+	Title         string  `json:"title"`
+	ThumbnailUrl  *string `json:"thumbnail_url"`
+}
+
 type ProgramsUsecase struct {
 	q *db.Queries
 }
@@ -150,6 +156,24 @@ func (u *ProgramsUsecase) ListPrograms(ctx context.Context, title string, tagIDs
 	return results, nil
 }
 
+func (u *ProgramsUsecase) ListTopPrograms(ctx context.Context) ([]TopProgramItem, error) {
+	programs, err := u.q.GetTopPrograms(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]TopProgramItem, 0, len(programs))
+	for _, program := range programs {
+		results = append(results, TopProgramItem{
+			ProgramID:    program.ProgramID,
+			Title:        program.Title,
+			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
+		})
+	}
+
+	return results, nil
+}
+
 
 // private functions
 
@@ -185,7 +209,6 @@ func buildPublicFileURL(filePath string) string {
 	}
 
 	base := os.Getenv("S3_PUBLIC_FILE_BUCKET_ENDPOINT")
-	println(base)
 	if base == "" {
 		return filePath
 	}

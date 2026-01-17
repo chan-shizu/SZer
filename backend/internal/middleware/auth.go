@@ -53,7 +53,9 @@ func RequireAuth() gin.HandlerFunc {
 
 		res, err := client.Do(req)
 		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to verify session"})
+			// Fail closed: treat verification failure as unauthenticated.
+			log.Printf("[auth] failed to verify session: %v", err)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			return
 		}
 		defer res.Body.Close()

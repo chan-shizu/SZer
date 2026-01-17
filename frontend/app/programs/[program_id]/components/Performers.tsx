@@ -19,7 +19,7 @@ export const Performers = ({ performers }: Props) => {
             key={performer.id}
             className="flex gap-x-2 px-3 py-1 rounded-md border-2 border-gray-300 items-center text-gray-600"
           >
-            {performer.image_url && <Image src={performer.image_url} alt="" width={28} height={28} unoptimized />}
+            {performer.image_url && <Image src={performer.image_url} alt="" width={28} height={28} />}
             <p className="font-semibold text-sm">{performer.full_name}</p>
           </div>
         ))}

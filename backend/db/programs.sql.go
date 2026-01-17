@@ -196,3 +196,42 @@ func (q *Queries) GetPrograms(ctx context.Context, arg GetProgramsParams) ([]Get
 	}
 	return items, nil
 }
+
+const getTopPrograms = `-- name: GetTopPrograms :many
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path
+FROM programs p
+ORDER BY p.created_at DESC
+LIMIT 5
+`
+
+type GetTopProgramsRow struct {
+	ProgramID     int64          `json:"program_id"`
+	Title         string         `json:"title"`
+	ThumbnailPath sql.NullString `json:"thumbnail_path"`
+}
+
+func (q *Queries) GetTopPrograms(ctx context.Context) ([]GetTopProgramsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTopPrograms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTopProgramsRow
+	for rows.Next() {
+		var i GetTopProgramsRow
+		if err := rows.Scan(&i.ProgramID, &i.Title, &i.ThumbnailPath); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

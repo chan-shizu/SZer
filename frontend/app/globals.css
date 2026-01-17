@@ -23,3 +23,12 @@
   --color-muted: #f1f5f9; /* Slate-100 */
   --color-muted-foreground: #64748b; /* Slate-500 */
 }
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

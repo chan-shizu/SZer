@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Home, Search } from "lucide-react";
 
 const tabs = [
   {
-    href: "/",
-    label: "ルート",
-    icon: Search,
+    href: "/top",
+    label: "トップ",
+    icon: Home,
   },
   {
     href: "/programs",

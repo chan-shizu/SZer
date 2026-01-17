@@ -37,6 +37,16 @@ export type GetProgramsResponse = {
   programs: ProgramListItem[];
 };
 
+export type GetTopProgramsResponse = {
+  programs: TopProgramItem[];
+};
+
+export type TopProgramItem = {
+  program_id: number;
+  title: string;
+  thumbnail_url: string | null;
+};
+
 import { backendFetchJson } from "./server";
 
 export async function getProgramDetail(id: number | string): Promise<GetProgramDetailResponse> {
@@ -62,4 +72,8 @@ export async function getPrograms(title?: string, tagIds?: Array<number | string
   const queryString = params.toString();
   const path = queryString ? `/programs?${queryString}` : "/programs";
   return backendFetchJson<GetProgramsResponse>(path, { method: "GET" });
+}
+
+export async function getTopPrograms(): Promise<GetTopProgramsResponse> {
+  return backendFetchJson<GetTopProgramsResponse>("/top", { method: "GET" });
 }

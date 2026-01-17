@@ -82,3 +82,12 @@ GROUP BY
   p.id,
   p.title,
   p.thumbnail_path;
+
+-- name: GetTopPrograms :many
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path
+FROM programs p
+ORDER BY p.created_at DESC
+LIMIT 5;

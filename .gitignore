@@ -10,3 +10,7 @@ frontend/out
 
 # minio
 minio
+
+# document
+memo.md
+documents/*

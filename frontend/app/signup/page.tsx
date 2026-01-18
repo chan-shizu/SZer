@@ -28,14 +28,14 @@ export default function SignupPage() {
       });
 
       if (res?.error) {
-        setError(res.error.message ?? "Failed to sign up");
+        setError(res.error.message ?? "登録に失敗しました");
         return;
       }
 
       router.push("/top");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign up");
+      setError(err instanceof Error ? err.message : "登録に失敗しました");
     } finally {
       setIsSubmitting(false);
     }
@@ -44,17 +44,17 @@ export default function SignupPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
       <main className="w-full max-w-md bg-white px-10 py-12 dark:bg-black">
-        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">Sign up</h1>
+        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">会員登録</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-          Already have an account?{" "}
+          すでにアカウントをお持ちですか？{" "}
           <Link className="text-blue-600" href="/login">
-            Login
+            ログイン
           </Link>
         </p>
 
         <form className="mt-8 space-y-4" onSubmit={onSubmit}>
           <label className="block">
-            <span className="text-sm text-zinc-700 dark:text-zinc-200">Name</span>
+            <span className="text-sm text-zinc-700 dark:text-zinc-200">名前</span>
             <input
               className="mt-1 w-full rounded border border-zinc-300 bg-transparent px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
               type="text"
@@ -66,7 +66,7 @@ export default function SignupPage() {
           </label>
 
           <label className="block">
-            <span className="text-sm text-zinc-700 dark:text-zinc-200">Email</span>
+            <span className="text-sm text-zinc-700 dark:text-zinc-200">メールアドレス</span>
             <input
               className="mt-1 w-full rounded border border-zinc-300 bg-transparent px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
               type="email"
@@ -78,7 +78,7 @@ export default function SignupPage() {
           </label>
 
           <label className="block">
-            <span className="text-sm text-zinc-700 dark:text-zinc-200">Password</span>
+            <span className="text-sm text-zinc-700 dark:text-zinc-200">パスワード</span>
             <input
               className="mt-1 w-full rounded border border-zinc-300 bg-transparent px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
               type="password"
@@ -96,7 +96,7 @@ export default function SignupPage() {
             type="submit"
             disabled={isSubmitting}
           >
-            {isSubmitting ? "Creating..." : "Create account"}
+            {isSubmitting ? "作成中..." : "アカウント作成"}
           </button>
         </form>
       </main>

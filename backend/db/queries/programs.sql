@@ -16,6 +16,7 @@ SELECT
   p.video_path,
   p.thumbnail_path,
   p.description,
+  COALESCE(wc.view_count, 0)::bigint AS view_count,
   p.created_at AS program_created_at,
   p.updated_at AS program_updated_at,
   COALESCE(
@@ -37,6 +38,11 @@ SELECT
     '[]'::jsonb
   ) AS performers
 FROM programs p
+LEFT JOIN (
+  SELECT program_id, COUNT(*)::bigint AS view_count
+  FROM watch_histories
+  GROUP BY program_id
+) wc ON wc.program_id = p.id
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 LEFT JOIN program_performers pp ON p.id = pp.program_id
@@ -48,6 +54,7 @@ GROUP BY
   p.video_path,
   p.thumbnail_path,
   p.description,
+  wc.view_count,
   p.created_at,
   p.updated_at;
 
@@ -56,6 +63,7 @@ SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
+  COALESCE(wc.view_count, 0)::bigint AS view_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
       'id', ct.id,
@@ -64,6 +72,11 @@ SELECT
     '[]'::jsonb
   ) AS category_tags
 FROM programs p
+LEFT JOIN (
+  SELECT program_id, COUNT(*)::bigint AS view_count
+  FROM watch_histories
+  GROUP BY program_id
+) wc ON wc.program_id = p.id
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 WHERE
@@ -81,13 +94,20 @@ WHERE
 GROUP BY
   p.id,
   p.title,
-  p.thumbnail_path;
+  p.thumbnail_path,
+  wc.view_count;
 
 -- name: GetTopPrograms :many
 SELECT
   p.id AS program_id,
   p.title,
-  p.thumbnail_path
+  p.thumbnail_path,
+  COALESCE(wc.view_count, 0)::bigint AS view_count
 FROM programs p
+LEFT JOIN (
+  SELECT program_id, COUNT(*)::bigint AS view_count
+  FROM watch_histories
+  GROUP BY program_id
+) wc ON wc.program_id = p.id
 ORDER BY p.created_at DESC
 LIMIT 5;

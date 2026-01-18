@@ -16,6 +16,8 @@
 
 ## Backend (ディレクトリ: `backend/`)
 
+### 基本情報
+
 - **言語**: Go 1.25.5
 - **フレームワーク**: Gin (`github.com/gin-gonic/gin`)
 - **DB アクセス**: **sqlc** (`github.com/sqlc-dev/sqlc`)
@@ -29,6 +31,11 @@
   - `internal/router/`: ルーティング定義
   - `db/`: 生成された DB コード (`*.sql.go`) とマイグレーションファイル
 
+### 注意事項
+
+- **認証**: フロントエンドの Better Auth を利用。Backend 側でトークン検証を実装。
+- **migration**: リリース前なので作業の効率化のために db 定義の変更を行う際は\backend\db\migrations\20260108111920_create_initial_tables.up.sql を編集しておく。
+
 ## Frontend (ディレクトリ: `frontend/`)
 
 - **フレームワーク**: Next.js 16.1.1 (App Router)
@@ -38,6 +45,10 @@
   - `lib/auth/` に設定あり。
   - `pg` ドライバを含み、Auth 関連で DB へ直接接続している可能性が高い。
 - **API 通信**: バックエンド API へのリクエストは `lib/api/` に集約。
+
+## 開発での注意事項
+
+- リファクタなどで不要になった関数、変数などがあれば積極的に削除してコードを綺麗に保つこと。
 
 # 開発ワークフローとコマンド
 

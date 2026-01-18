@@ -19,6 +19,7 @@ func NewRouter(q *db.Queries) *gin.Engine {
 	router.GET("/top", h.Top)
 	router.GET("/programs/:id", h.ProgramDetails)
 	router.GET("/programs", h.ListPrograms)
+	router.POST("/watch-histories", h.UpsertWatchHistory)
 	
 	return router
 }

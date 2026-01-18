@@ -26,6 +26,12 @@ type ProgramDetailsPerformer struct {
 	ImageUrl    *string `json:"image_url"`
 }
 
+type ProgramWatchHistory struct {
+	PositionSeconds int32     `json:"position_seconds"`
+	IsCompleted     bool      `json:"is_completed"`
+	LastWatchedAt   time.Time `json:"last_watched_at"`
+}
+
 type programDetailsPerformerRaw struct {
 	ID            int64   `json:"id"`
 	FirstName     string  `json:"first_name"`
@@ -39,17 +45,20 @@ type ProgramDetail struct {
 	ProgramID        int64                       `json:"program_id"`
 	Title            string                      `json:"title"`
 	VideoURL         string                      `json:"video_url"`
+	ViewCount        int64                       `json:"view_count"`
 	ThumbnailUrl    *string                     `json:"thumbnail_url"`
 	Description      *string                     `json:"description"`
 	ProgramCreatedAt time.Time                   `json:"program_created_at"`
 	ProgramUpdatedAt time.Time                   `json:"program_updated_at"`
 	CategoryTags     []ProgramDetailsCategoryTag `json:"category_tags"`
 	Performers       []ProgramDetailsPerformer   `json:"performers"`
+	WatchHistory     *ProgramWatchHistory        `json:"watch_history"`
 }
 
 type ProgramListItem struct {
 	ProgramID        int64                       `json:"program_id"`
 	Title            string                      `json:"title"`
+	ViewCount        int64                       `json:"view_count"`
 	ThumbnailUrl    *string                     `json:"thumbnail_url"`
 	CategoryTags     []ProgramDetailsCategoryTag `json:"category_tags"`
 }
@@ -57,6 +66,7 @@ type ProgramListItem struct {
 type TopProgramItem struct {
 	ProgramID     int64   `json:"program_id"`
 	Title         string  `json:"title"`
+	ViewCount     int64   `json:"view_count"`
 	ThumbnailUrl  *string `json:"thumbnail_url"`
 }
 
@@ -68,13 +78,36 @@ func NewProgramsUsecase(q *db.Queries) *ProgramsUsecase {
 	return &ProgramsUsecase{q: q}
 }
 
-func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, id int64) (ProgramDetail, error) {
+func (u *ProgramsUsecase) UpsertWatchHistory(ctx context.Context, userID string, programID int64, positionSeconds int32, isCompleted bool) (db.UpsertWatchHistoryRow, error) {
+	return u.q.UpsertWatchHistory(ctx, db.UpsertWatchHistoryParams{
+		UserID:          userID,
+		ProgramID:       programID,
+		PositionSeconds: positionSeconds,
+		IsCompleted:     isCompleted,
+	})
+}
+
+func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, id int64) (ProgramDetail, error) {
 	program, err := u.q.GetProgramByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ProgramDetail{}, ErrProgramNotFound
 		}
 		return ProgramDetail{}, err
+	}
+
+	var watchHistory *ProgramWatchHistory
+	wh, err := u.q.GetIncompleteWatchHistoryByUserAndProgram(ctx, db.GetIncompleteWatchHistoryByUserAndProgramParams{UserID: userID, ProgramID: id})
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return ProgramDetail{}, err
+		}
+	} else {
+		watchHistory = &ProgramWatchHistory{
+			PositionSeconds: wh.PositionSeconds,
+			IsCompleted:     wh.IsCompleted,
+			LastWatchedAt:   wh.LastWatchedAt,
+		}
 	}
 
 	categoryTagsJSON, err := normalizeJSONBytes(program.CategoryTags)
@@ -110,12 +143,14 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, id int64) (Prog
 		ProgramID:        program.ProgramID,
 		Title:            program.Title,
 		VideoURL:         buildVideoURL(program.VideoPath),
+		ViewCount:        program.ViewCount,
 		ThumbnailUrl:    buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 		Description:      nullStringPtr(program.Description),
 		ProgramCreatedAt: program.ProgramCreatedAt,
 		ProgramUpdatedAt: program.ProgramUpdatedAt,
 		CategoryTags:     categoryTags,
 		Performers:       performers,
+		WatchHistory:     watchHistory,
 	}
 	return resp, nil
 }
@@ -148,6 +183,7 @@ func (u *ProgramsUsecase) ListPrograms(ctx context.Context, title string, tagIDs
 		results = append(results, ProgramListItem{
 			ProgramID:     program.ProgramID,
 			Title:         program.Title,
+			ViewCount:     program.ViewCount,
 			ThumbnailUrl:  buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 			CategoryTags:  categoryTags,
 		})
@@ -167,6 +203,7 @@ func (u *ProgramsUsecase) ListTopPrograms(ctx context.Context) ([]TopProgramItem
 		results = append(results, TopProgramItem{
 			ProgramID:    program.ProgramID,
 			Title:        program.Title,
+			ViewCount:    program.ViewCount,
 			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 		})
 	}

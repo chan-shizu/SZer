@@ -1,11 +1,13 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"errors"
 
+	"github.com/chan-shizu/SZer/internal/middleware"
 	"github.com/chan-shizu/SZer/internal/usecase"
 	"github.com/gin-gonic/gin"
 )
@@ -14,11 +16,23 @@ type Handler struct {
 	programs      *usecase.ProgramsUsecase
 }
 
+type upsertWatchHistoryRequest struct {
+	ProgramID       int64 `json:"program_id"`
+	PositionSeconds int32 `json:"position_seconds"`
+	IsCompleted     bool  `json:"is_completed"`
+}
+
 func New(programs *usecase.ProgramsUsecase) *Handler {
 	return &Handler{programs: programs}
 }
 
 func (h *Handler) ProgramDetails(c *gin.Context) {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
@@ -26,7 +40,7 @@ func (h *Handler) ProgramDetails(c *gin.Context) {
 		return
 	}
 
-	program, err := h.programs.GetProgramDetails(c.Request.Context(), id)
+	program, err := h.programs.GetProgramDetails(c.Request.Context(), userID, id)
 	if err != nil {
 		if errors.Is(err, usecase.ErrProgramNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "program not found"})
@@ -39,6 +53,39 @@ func (h *Handler) ProgramDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"program": program,
 	})
+}
+
+func (h *Handler) UpsertWatchHistory(c *gin.Context) {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var req upsertWatchHistoryRequest
+	dec := json.NewDecoder(c.Request.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
+		return
+	}
+
+	if req.ProgramID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "program_id is required"})
+		return
+	}
+	if req.PositionSeconds < 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "position_seconds must be >= 0"})
+		return
+	}
+
+	wh, err := h.programs.UpsertWatchHistory(c.Request.Context(), userID, req.ProgramID, req.PositionSeconds, req.IsCompleted)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upsert watch history"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"watch_history": wh})
 }
 
 func (h *Handler) ListPrograms(c *gin.Context) {

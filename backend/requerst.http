@@ -46,3 +46,14 @@ Cookie: {{cookie}}
 GET http://localhost:8080/programs?tag_ids=3
 Cookie: {{cookie}}
 
+### 視聴履歴 upsert（視聴終了時に呼ぶ想定）
+POST http://localhost:8080/watch-histories
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+	"program_id": 1,
+	"position_seconds": 123,
+	"is_completed": false
+}
+

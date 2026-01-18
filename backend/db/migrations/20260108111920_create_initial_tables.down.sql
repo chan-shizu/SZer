@@ -5,6 +5,12 @@ DROP INDEX IF EXISTS "verification_identifier_idx";
 DROP INDEX IF EXISTS "account_userId_idx";
 DROP INDEX IF EXISTS "session_userId_idx";
 
+-- watch histories depends on "user" and programs
+DROP INDEX IF EXISTS watch_histories_user_program_incomplete_uq;
+DROP INDEX IF EXISTS watch_histories_program_id_idx;
+DROP INDEX IF EXISTS watch_histories_user_last_watched_idx;
+DROP TABLE IF EXISTS watch_histories;
+
 DROP TABLE IF EXISTS "verification";
 DROP TABLE IF EXISTS "account";
 DROP TABLE IF EXISTS "session";

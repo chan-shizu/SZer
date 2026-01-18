@@ -18,6 +18,7 @@ export const ProgramCard = ({ program }: Props) => {
     >
       <div className="flex-1 pr-4">
         <h3 className="text-sm font-semibold text-foreground mb-1">{program.title}</h3>
+        <div className="text-xs text-gray-600 mb-1">視聴回数: {program.view_count}回</div>
         <div className="flex flex-wrap gap-1">
           {program.category_tags.map((tag) => {
             const colorClass = getTagColor(tag.name);

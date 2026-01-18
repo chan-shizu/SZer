@@ -101,3 +101,29 @@ create index "session_userId_idx" on "session" ("userId");
 create index "account_userId_idx" on "account" ("userId");
 
 create index "verification_identifier_idx" on "verification" ("identifier");
+
+-- Watch histories (user x program)
+-- Must be created after better-auth "user" table exists.
+CREATE TABLE IF NOT EXISTS watch_histories (
+  id BIGSERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  program_id BIGINT NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+  position_seconds INT NOT NULL DEFAULT 0,
+  is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+  last_watched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT watch_histories_position_non_negative CHECK (position_seconds >= 0)
+);
+
+-- Ensure at most one *incomplete* record per (user_id, program_id)
+CREATE UNIQUE INDEX IF NOT EXISTS watch_histories_user_program_incomplete_uq
+  ON watch_histories (user_id, program_id)
+  WHERE (is_completed = FALSE);
+
+-- For aggregations by program_id (e.g. view_count)
+CREATE INDEX IF NOT EXISTS watch_histories_program_id_idx
+  ON watch_histories (program_id);
+
+CREATE INDEX IF NOT EXISTS watch_histories_user_last_watched_idx
+  ON watch_histories (user_id, last_watched_at DESC);

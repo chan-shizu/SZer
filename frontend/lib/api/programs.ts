@@ -10,16 +10,24 @@ export type ProgramDetailsPerformer = {
   image_url: string | null;
 };
 
+export type ProgramWatchHistory = {
+  position_seconds: number;
+  is_completed: boolean;
+  last_watched_at: string;
+};
+
 export type ProgramDetails = {
   program_id: number;
   title: string;
   video_url: string;
+  view_count: number;
   thumbnail_url: string | null;
   description: string | null;
   program_created_at: string;
   program_updated_at: string;
   category_tags: ProgramDetailsCategoryTag[];
   performers: ProgramDetailsPerformer[];
+  watch_history: ProgramWatchHistory | null;
 };
 
 export type GetProgramDetailResponse = {
@@ -29,6 +37,7 @@ export type GetProgramDetailResponse = {
 export type ProgramListItem = {
   program_id: number;
   title: string;
+  view_count: number;
   thumbnail_url: string | null;
   category_tags: ProgramDetailsCategoryTag[];
 };
@@ -44,6 +53,7 @@ export type GetTopProgramsResponse = {
 export type TopProgramItem = {
   program_id: number;
   title: string;
+  view_count: number;
   thumbnail_url: string | null;
 };
 
@@ -51,7 +61,7 @@ import { backendFetchJson } from "./server";
 
 export async function getProgramDetail(id: number | string): Promise<GetProgramDetailResponse> {
   const encodedId = encodeURIComponent(String(id));
-  return backendFetchJson<GetProgramDetailResponse>(`/programs/${encodedId}`, { method: "GET" });
+  return backendFetchJson<GetProgramDetailResponse>(`/programs/${encodedId}`, { method: "GET", cache: "no-store" });
 }
 
 export async function getPrograms(title?: string, tagIds?: Array<number | string>): Promise<GetProgramsResponse> {
@@ -71,9 +81,9 @@ export async function getPrograms(title?: string, tagIds?: Array<number | string
 
   const queryString = params.toString();
   const path = queryString ? `/programs?${queryString}` : "/programs";
-  return backendFetchJson<GetProgramsResponse>(path, { method: "GET" });
+  return backendFetchJson<GetProgramsResponse>(path, { method: "GET", cache: "no-store" });
 }
 
 export async function getTopPrograms(): Promise<GetTopProgramsResponse> {
-  return backendFetchJson<GetTopProgramsResponse>("/top", { method: "GET" });
+  return backendFetchJson<GetTopProgramsResponse>("/top", { method: "GET", cache: "no-store" });
 }

@@ -100,3 +100,14 @@ type Verification struct {
 	CreatedAt  time.Time `json:"createdAt"`
 	UpdatedAt  time.Time `json:"updatedAt"`
 }
+
+type WatchHistory struct {
+	ID              int64     `json:"id"`
+	UserID          string    `json:"user_id"`
+	ProgramID       int64     `json:"program_id"`
+	PositionSeconds int32     `json:"position_seconds"`
+	IsCompleted     bool      `json:"is_completed"`
+	LastWatchedAt   time.Time `json:"last_watched_at"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}

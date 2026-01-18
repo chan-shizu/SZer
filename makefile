@@ -26,6 +26,7 @@ help:
 	@echo "  MIGRATIONS_PATH=... (default: db/migrations)"
 	@echo "  DOCKER_EXEC_FLAGS=... (e.g. -T)"
 
+# migrate
 migrate-up:
 	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(DEV_DATABASE_URL)" up
 
@@ -37,3 +38,7 @@ migrate-down1:
 
 migrate-down:
 	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(DEV_DATABASE_URL)" down
+
+# cmd
+seed:
+	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) go run ./cmd/seed/main.go

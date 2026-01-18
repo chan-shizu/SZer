@@ -13,12 +13,18 @@ export default async function Page({ params }: Props) {
     throw new Error("program_id is required");
   }
   const programDetail = await getProgramDetail(program_id);
+  const programIdNumber = Number(programDetail.program.program_id);
 
   return (
     <div>
-      <Video videoUrl={programDetail.program.video_url} />
+      <Video
+        programId={programIdNumber}
+        videoUrl={programDetail.program.video_url}
+        startPositionSeconds={programDetail.program.watch_history?.position_seconds ?? undefined}
+      />
       <div className="p-4 grid gap-y-4">
         <Title title={programDetail.program.title} />
+        <div className="text-sm text-gray-600">視聴回数: {programDetail.program.view_count}回</div>
         <Description description={programDetail.program.description ?? "説明文はありません"} />
         <CategoryTags categoryTags={programDetail.program.category_tags} />
         <Performers performers={programDetail.program.performers} />

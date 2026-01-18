@@ -59,6 +59,7 @@ SELECT
   p.video_path,
   p.thumbnail_path,
   p.description,
+  COALESCE(wc.view_count, 0)::bigint AS view_count,
   p.created_at AS program_created_at,
   p.updated_at AS program_updated_at,
   COALESCE(
@@ -80,6 +81,11 @@ SELECT
     '[]'::jsonb
   ) AS performers
 FROM programs p
+LEFT JOIN (
+  SELECT program_id, COUNT(*)::bigint AS view_count
+  FROM watch_histories
+  GROUP BY program_id
+) wc ON wc.program_id = p.id
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 LEFT JOIN program_performers pp ON p.id = pp.program_id
@@ -91,6 +97,7 @@ GROUP BY
   p.video_path,
   p.thumbnail_path,
   p.description,
+  wc.view_count,
   p.created_at,
   p.updated_at
 `
@@ -101,6 +108,7 @@ type GetProgramByIDRow struct {
 	VideoPath        string         `json:"video_path"`
 	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
 	Description      sql.NullString `json:"description"`
+	ViewCount        int64          `json:"view_count"`
 	ProgramCreatedAt time.Time      `json:"program_created_at"`
 	ProgramUpdatedAt time.Time      `json:"program_updated_at"`
 	CategoryTags     interface{}    `json:"category_tags"`
@@ -116,6 +124,7 @@ func (q *Queries) GetProgramByID(ctx context.Context, id int64) (GetProgramByIDR
 		&i.VideoPath,
 		&i.ThumbnailPath,
 		&i.Description,
+		&i.ViewCount,
 		&i.ProgramCreatedAt,
 		&i.ProgramUpdatedAt,
 		&i.CategoryTags,
@@ -129,6 +138,7 @@ SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
+  COALESCE(wc.view_count, 0)::bigint AS view_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
       'id', ct.id,
@@ -137,6 +147,11 @@ SELECT
     '[]'::jsonb
   ) AS category_tags
 FROM programs p
+LEFT JOIN (
+  SELECT program_id, COUNT(*)::bigint AS view_count
+  FROM watch_histories
+  GROUP BY program_id
+) wc ON wc.program_id = p.id
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 WHERE
@@ -154,7 +169,8 @@ WHERE
 GROUP BY
   p.id,
   p.title,
-  p.thumbnail_path
+  p.thumbnail_path,
+  wc.view_count
 `
 
 type GetProgramsParams struct {
@@ -166,6 +182,7 @@ type GetProgramsRow struct {
 	ProgramID     int64          `json:"program_id"`
 	Title         string         `json:"title"`
 	ThumbnailPath sql.NullString `json:"thumbnail_path"`
+	ViewCount     int64          `json:"view_count"`
 	CategoryTags  interface{}    `json:"category_tags"`
 }
 
@@ -182,6 +199,7 @@ func (q *Queries) GetPrograms(ctx context.Context, arg GetProgramsParams) ([]Get
 			&i.ProgramID,
 			&i.Title,
 			&i.ThumbnailPath,
+			&i.ViewCount,
 			&i.CategoryTags,
 		); err != nil {
 			return nil, err
@@ -201,8 +219,14 @@ const getTopPrograms = `-- name: GetTopPrograms :many
 SELECT
   p.id AS program_id,
   p.title,
-  p.thumbnail_path
+  p.thumbnail_path,
+  COALESCE(wc.view_count, 0)::bigint AS view_count
 FROM programs p
+LEFT JOIN (
+  SELECT program_id, COUNT(*)::bigint AS view_count
+  FROM watch_histories
+  GROUP BY program_id
+) wc ON wc.program_id = p.id
 ORDER BY p.created_at DESC
 LIMIT 5
 `
@@ -211,6 +235,7 @@ type GetTopProgramsRow struct {
 	ProgramID     int64          `json:"program_id"`
 	Title         string         `json:"title"`
 	ThumbnailPath sql.NullString `json:"thumbnail_path"`
+	ViewCount     int64          `json:"view_count"`
 }
 
 func (q *Queries) GetTopPrograms(ctx context.Context) ([]GetTopProgramsRow, error) {
@@ -222,7 +247,12 @@ func (q *Queries) GetTopPrograms(ctx context.Context) ([]GetTopProgramsRow, erro
 	var items []GetTopProgramsRow
 	for rows.Next() {
 		var i GetTopProgramsRow
-		if err := rows.Scan(&i.ProgramID, &i.Title, &i.ThumbnailPath); err != nil {
+		if err := rows.Scan(
+			&i.ProgramID,
+			&i.Title,
+			&i.ThumbnailPath,
+			&i.ViewCount,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -25,6 +25,7 @@ export function TopProgramCard({ program }: Props) {
           <div className="w-48 h-24 rounded bg-gray-100 flex items-center justify-center text-foreground">No Image</div>
         )}
         <div className="mt-2 text-sm font-semibold text-foreground line-clamp-2">{program.title}</div>
+        <div className="mt-1 text-xs text-gray-600">視聴回数: {program.view_count}回</div>
       </Link>
     </div>
   );

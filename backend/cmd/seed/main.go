@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"log"
 	"net/url"
 	"os"
@@ -11,7 +13,35 @@ import (
 
 	"github.com/chan-shizu/SZer/db"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/scrypt"
+	"golang.org/x/text/unicode/norm"
 )
+
+const (
+	scryptN     = 16384
+	scryptR     = 16
+	scryptP     = 1
+	scryptKeyLn = 64
+)
+
+func hashBetterAuthPassword(password string) (string, error) {
+	// better-auth uses password.normalize("NFKC")
+	normalizedPassword := norm.NFKC.String(password)
+
+	saltRaw := make([]byte, 16)
+	if _, err := rand.Read(saltRaw); err != nil {
+		return "", err
+	}
+	// NOTE: better-auth uses the hex string itself as the scrypt salt input (utf-8 bytes), not the raw 16 bytes.
+	saltHex := hex.EncodeToString(saltRaw)
+
+	key, err := scrypt.Key([]byte(normalizedPassword), []byte(saltHex), scryptN, scryptR, scryptP, scryptKeyLn)
+	if err != nil {
+		return "", err
+	}
+	keyHex := hex.EncodeToString(key)
+	return saltHex + ":" + keyHex, nil
+}
 
 func main() {
 	dsn := os.Getenv("DATABASE_URL")
@@ -51,6 +81,44 @@ func main() {
 	// 元のすべてのデータをクリア
 	if err := q.ClearAllData(ctx); err != nil {
 		log.Fatalf("failed to clear data: %v", err)
+	}
+
+	// Seed users (better-auth tables)
+	// NOTE: id is text primary key; for seed we use deterministic IDs.
+	seedUsers := []struct {
+		ID    string
+		Name  string
+		Email string
+		Password string
+	}{
+		{ID: "seed-user-1", Name: "Seed User 1", Email: "seed1@example.com", Password: "seed123456"},
+		{ID: "seed-user-2", Name: "Seed User 2", Email: "seed2@example.com", Password: "seed123456"},
+	}
+	for _, u := range seedUsers {
+		if _, err := q.CreateAuthUser(ctx, db.CreateAuthUserParams{
+			ID:            u.ID,
+			Name:          u.Name,
+			Email:         u.Email,
+			EmailVerified: false,
+			Image:         sql.NullString{Valid: false},
+		}); err != nil {
+			log.Fatalf("failed to create user %s: %v", u.ID, err)
+		}
+
+		passwordHash, err := hashBetterAuthPassword(u.Password)
+		if err != nil {
+			log.Fatalf("failed to hash password for user %s: %v", u.ID, err)
+		}
+		accountID := u.ID // better-auth uses accountId = userId for providerId="credential"
+		accountRowID := "seed-account-" + u.ID
+		if _, err := q.CreateCredentialAccount(ctx, db.CreateCredentialAccountParams{
+			ID:        accountRowID,
+			AccountId: accountID,
+			UserId:    u.ID,
+			Password:  sql.NullString{String: passwordHash, Valid: true},
+		}); err != nil {
+			log.Fatalf("failed to create credential account for user %s: %v", u.ID, err)
+		}
 	}
 
 	// Seed category tags
@@ -111,6 +179,10 @@ func main() {
 			log.Fatalf("failed to create video: %v", err)
 		}
 
+		// keep for watch_histories seed later
+		// program IDs start from 1 due to RESTART IDENTITY
+		_ = program
+
 		// Link tags to video
 		limit := i + 1
 		if limit > len(tags) {
@@ -135,6 +207,23 @@ func main() {
 		}
 
 		log.Printf("seed created video id=%d, title=%s", program.ID, vidParams.Title)
+	}
+
+	// Seed watch histories
+	// Spec: view_count counts even incomplete watches, so we insert a few incomplete and completed entries.
+	watchSeeds := []db.UpsertWatchHistoryParams{
+		// program 1: two views (one incomplete, one completed)
+		{UserID: "seed-user-1", ProgramID: 1, PositionSeconds: 120, IsCompleted: false},
+		{UserID: "seed-user-2", ProgramID: 1, PositionSeconds: 600, IsCompleted: true},
+		// program 2: one view (completed)
+		{UserID: "seed-user-1", ProgramID: 2, PositionSeconds: 900, IsCompleted: true},
+		// program 3: one view (incomplete)
+		{UserID: "seed-user-2", ProgramID: 3, PositionSeconds: 42, IsCompleted: false},
+	}
+	for _, wh := range watchSeeds {
+		if _, err := q.UpsertWatchHistory(ctx, wh); err != nil {
+			log.Fatalf("failed to upsert watch history user_id=%s program_id=%d: %v", wh.UserID, wh.ProgramID, err)
+		}
 	}
 
 	log.Println("seed completed")

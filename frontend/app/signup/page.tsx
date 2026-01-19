@@ -42,7 +42,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
+    <div className="flex min-h-screen items-center justify-center font-sans dark:bg-black">
       <main className="w-full max-w-md bg-white px-10 py-12 dark:bg-black">
         <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">会員登録</h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">

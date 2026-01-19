@@ -1,5 +1,10 @@
 -- name: ClearAllData :exec
 TRUNCATE TABLE
+  watch_histories,
+  "verification",
+  "account",
+  "session",
+  "user",
   comments,
   program_category_tags,
   program_performers,

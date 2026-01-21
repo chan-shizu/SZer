@@ -1,5 +1,6 @@
 -- name: ClearAllData :exec
 TRUNCATE TABLE
+  likes,
   watch_histories,
   "verification",
   "account",

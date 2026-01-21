@@ -58,12 +58,68 @@ GROUP BY
   p.created_at,
   p.updated_at;
 
+-- name: GetProgramDetailsByID :one
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.video_path,
+  p.thumbnail_path,
+  p.description,
+  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
+  EXISTS(
+    SELECT 1
+    FROM likes l
+    WHERE l.program_id = p.id AND l.user_id = $2
+  ) AS liked,
+  p.created_at AS program_created_at,
+  p.updated_at AS program_updated_at,
+  COALESCE(
+    jsonb_agg(DISTINCT jsonb_build_object(
+      'id', ct.id,
+      'name', ct.name
+    )) FILTER (WHERE ct.id IS NOT NULL),
+    '[]'::jsonb
+  ) AS category_tags,
+  COALESCE(
+    jsonb_agg(DISTINCT jsonb_build_object(
+      'id', pe.id,
+      'first_name', pe.first_name,
+      'last_name', pe.last_name,
+      'first_name_kana', pe.first_name_kana,
+      'last_name_kana', pe.last_name_kana,
+      'image_path', pe.image_path
+    )) FILTER (WHERE pe.id IS NOT NULL),
+    '[]'::jsonb
+  ) AS performers
+FROM programs p
+LEFT JOIN (
+  SELECT program_id, COUNT(*)::bigint AS view_count
+  FROM watch_histories
+  GROUP BY program_id
+) wc ON wc.program_id = p.id
+LEFT JOIN program_category_tags pct ON p.id = pct.program_id
+LEFT JOIN category_tags ct ON pct.tag_id = ct.id
+LEFT JOIN program_performers pp ON p.id = pp.program_id
+LEFT JOIN performers pe ON pp.performer_id = pe.id
+WHERE p.id = $1
+GROUP BY
+  p.id,
+  p.title,
+  p.video_path,
+  p.thumbnail_path,
+  p.description,
+  wc.view_count,
+  p.created_at,
+  p.updated_at;
+
 -- name: GetPrograms :many
 SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
   COALESCE(wc.view_count, 0)::bigint AS view_count,
+  COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
       'id', ct.id,
@@ -102,7 +158,8 @@ SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  COALESCE(wc.view_count, 0)::bigint AS view_count
+  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count
 FROM programs p
 LEFT JOIN (
   SELECT program_id, COUNT(*)::bigint AS view_count
@@ -111,3 +168,10 @@ LEFT JOIN (
 ) wc ON wc.program_id = p.id
 ORDER BY p.created_at DESC
 LIMIT 5;
+
+-- name: ExistsProgram :one
+SELECT EXISTS(
+  SELECT 1
+  FROM programs
+  WHERE id = $1
+) AS exists;

@@ -40,6 +40,13 @@ type Comment struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type Like struct {
+	ID        int64     `json:"id"`
+	UserID    string    `json:"user_id"`
+	ProgramID int64     `json:"program_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Performer struct {
 	ID            int64          `json:"id"`
 	FirstName     string         `json:"first_name"`

@@ -127,3 +127,16 @@ CREATE INDEX IF NOT EXISTS watch_histories_program_id_idx
 
 CREATE INDEX IF NOT EXISTS watch_histories_user_last_watched_idx
   ON watch_histories (user_id, last_watched_at DESC);
+
+-- Likes (user x program)
+-- Must be created after better-auth "user" table exists.
+CREATE TABLE IF NOT EXISTS likes (
+  id BIGSERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  program_id BIGINT NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT likes_user_program_uq UNIQUE (user_id, program_id)
+);
+
+CREATE INDEX IF NOT EXISTS likes_program_id_idx
+  ON likes (program_id);

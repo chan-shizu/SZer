@@ -46,6 +46,8 @@ type ProgramDetail struct {
 	Title            string                      `json:"title"`
 	VideoURL         string                      `json:"video_url"`
 	ViewCount        int64                       `json:"view_count"`
+	LikeCount        int64                       `json:"like_count"`
+	Liked            bool                        `json:"liked"`
 	ThumbnailUrl    *string                     `json:"thumbnail_url"`
 	Description      *string                     `json:"description"`
 	ProgramCreatedAt time.Time                   `json:"program_created_at"`
@@ -59,6 +61,7 @@ type ProgramListItem struct {
 	ProgramID        int64                       `json:"program_id"`
 	Title            string                      `json:"title"`
 	ViewCount        int64                       `json:"view_count"`
+	LikeCount        int64                       `json:"like_count"`
 	ThumbnailUrl    *string                     `json:"thumbnail_url"`
 	CategoryTags     []ProgramDetailsCategoryTag `json:"category_tags"`
 }
@@ -67,6 +70,7 @@ type TopProgramItem struct {
 	ProgramID     int64   `json:"program_id"`
 	Title         string  `json:"title"`
 	ViewCount     int64   `json:"view_count"`
+	LikeCount     int64   `json:"like_count"`
 	ThumbnailUrl  *string `json:"thumbnail_url"`
 }
 
@@ -88,7 +92,7 @@ func (u *ProgramsUsecase) UpsertWatchHistory(ctx context.Context, userID string,
 }
 
 func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, id int64) (ProgramDetail, error) {
-	program, err := u.q.GetProgramByID(ctx, id)
+	program, err := u.q.GetProgramDetailsByID(ctx, db.GetProgramDetailsByIDParams{ID: id, UserID: userID})
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ProgramDetail{}, ErrProgramNotFound
@@ -144,6 +148,8 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, 
 		Title:            program.Title,
 		VideoURL:         buildVideoURL(program.VideoPath),
 		ViewCount:        program.ViewCount,
+		LikeCount:        program.LikeCount,
+		Liked:            program.Liked,
 		ThumbnailUrl:    buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 		Description:      nullStringPtr(program.Description),
 		ProgramCreatedAt: program.ProgramCreatedAt,
@@ -153,6 +159,46 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, 
 		WatchHistory:     watchHistory,
 	}
 	return resp, nil
+}
+
+func (u *ProgramsUsecase) LikeProgram(ctx context.Context, userID string, programID int64) (bool, int64, error) {
+	exists, err := u.q.ExistsProgram(ctx, programID)
+	if err != nil {
+		return false, 0, err
+	}
+	if !exists {
+		return false, 0, ErrProgramNotFound
+	}
+
+	if err := u.q.CreateLike(ctx, db.CreateLikeParams{UserID: userID, ProgramID: programID}); err != nil {
+		return false, 0, err
+	}
+
+	likeCount, err := u.q.CountLikesByProgramID(ctx, programID)
+	if err != nil {
+		return false, 0, err
+	}
+	return true, likeCount, nil
+}
+
+func (u *ProgramsUsecase) UnlikeProgram(ctx context.Context, userID string, programID int64) (bool, int64, error) {
+	exists, err := u.q.ExistsProgram(ctx, programID)
+	if err != nil {
+		return false, 0, err
+	}
+	if !exists {
+		return false, 0, ErrProgramNotFound
+	}
+
+	if err := u.q.DeleteLike(ctx, db.DeleteLikeParams{UserID: userID, ProgramID: programID}); err != nil {
+		return false, 0, err
+	}
+
+	likeCount, err := u.q.CountLikesByProgramID(ctx, programID)
+	if err != nil {
+		return false, 0, err
+	}
+	return false, likeCount, nil
 }
 
 func (u *ProgramsUsecase) ListPrograms(ctx context.Context, title string, tagIDs []int64) ([]ProgramListItem, error) {
@@ -184,6 +230,7 @@ func (u *ProgramsUsecase) ListPrograms(ctx context.Context, title string, tagIDs
 			ProgramID:     program.ProgramID,
 			Title:         program.Title,
 			ViewCount:     program.ViewCount,
+			LikeCount:     program.LikeCount,
 			ThumbnailUrl:  buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 			CategoryTags:  categoryTags,
 		})
@@ -204,6 +251,7 @@ func (u *ProgramsUsecase) ListTopPrograms(ctx context.Context) ([]TopProgramItem
 			ProgramID:    program.ProgramID,
 			Title:        program.Title,
 			ViewCount:    program.ViewCount,
+			LikeCount:    program.LikeCount,
 			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 		})
 	}

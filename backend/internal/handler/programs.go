@@ -55,6 +55,66 @@ func (h *Handler) ProgramDetails(c *gin.Context) {
 	})
 }
 
+func (h *Handler) LikeProgram(c *gin.Context) {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	liked, likeCount, err := h.programs.LikeProgram(c.Request.Context(), userID, id)
+	if err != nil {
+		if errors.Is(err, usecase.ErrProgramNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "program not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to like program"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"liked":      liked,
+		"like_count": likeCount,
+	})
+}
+
+func (h *Handler) UnlikeProgram(c *gin.Context) {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	liked, likeCount, err := h.programs.UnlikeProgram(c.Request.Context(), userID, id)
+	if err != nil {
+		if errors.Is(err, usecase.ErrProgramNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "program not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to unlike program"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"liked":      liked,
+		"like_count": likeCount,
+	})
+}
+
 func (h *Handler) UpsertWatchHistory(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {

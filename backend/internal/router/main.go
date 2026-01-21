@@ -18,6 +18,8 @@ func NewRouter(q *db.Queries) *gin.Engine {
 
 	router.GET("/top", h.Top)
 	router.GET("/programs/:id", h.ProgramDetails)
+	router.POST("/programs/:id/like", h.LikeProgram)
+	router.DELETE("/programs/:id/like", h.UnlikeProgram)
 	router.GET("/programs", h.ListPrograms)
 	router.POST("/watch-histories", h.UpsertWatchHistory)
 	

@@ -91,8 +91,8 @@ func main() {
 		Email string
 		Password string
 	}{
-		{ID: "seed-user-1", Name: "Seed User 1", Email: "seed1@example.com", Password: "seed123456"},
-		{ID: "seed-user-2", Name: "Seed User 2", Email: "seed2@example.com", Password: "seed123456"},
+		{ID: "seed-user-1", Name: "Seed User 1", Email: "seed1@example.com", Password: "password"},
+		{ID: "seed-user-2", Name: "Seed User 2", Email: "seed2@example.com", Password: "password"},
 	}
 	for _, u := range seedUsers {
 		if _, err := q.CreateAuthUser(ctx, db.CreateAuthUserParams{
@@ -223,6 +223,18 @@ func main() {
 	for _, wh := range watchSeeds {
 		if _, err := q.UpsertWatchHistory(ctx, wh); err != nil {
 			log.Fatalf("failed to upsert watch history user_id=%s program_id=%d: %v", wh.UserID, wh.ProgramID, err)
+		}
+	}
+
+	// Seed likes
+	likeSeeds := []db.CreateLikeParams{
+		{UserID: "seed-user-1", ProgramID: 1},
+		{UserID: "seed-user-1", ProgramID: 2},
+		{UserID: "seed-user-2", ProgramID: 1},
+	}
+	for _, l := range likeSeeds {
+		if err := q.CreateLike(ctx, l); err != nil {
+			log.Fatalf("failed to create like user_id=%s program_id=%d: %v", l.UserID, l.ProgramID, err)
 		}
 	}
 

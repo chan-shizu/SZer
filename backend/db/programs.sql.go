@@ -52,6 +52,21 @@ func (q *Queries) CreateProgram(ctx context.Context, arg CreateProgramParams) (P
 	return i, err
 }
 
+const existsProgram = `-- name: ExistsProgram :one
+SELECT EXISTS(
+  SELECT 1
+  FROM programs
+  WHERE id = $1
+) AS exists
+`
+
+func (q *Queries) ExistsProgram(ctx context.Context, id int64) (bool, error) {
+	row := q.db.QueryRowContext(ctx, existsProgram, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const getProgramByID = `-- name: GetProgramByID :one
 SELECT
   p.id AS program_id,
@@ -133,12 +148,109 @@ func (q *Queries) GetProgramByID(ctx context.Context, id int64) (GetProgramByIDR
 	return i, err
 }
 
+const getProgramDetailsByID = `-- name: GetProgramDetailsByID :one
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.video_path,
+  p.thumbnail_path,
+  p.description,
+  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
+  EXISTS(
+    SELECT 1
+    FROM likes l
+    WHERE l.program_id = p.id AND l.user_id = $2
+  ) AS liked,
+  p.created_at AS program_created_at,
+  p.updated_at AS program_updated_at,
+  COALESCE(
+    jsonb_agg(DISTINCT jsonb_build_object(
+      'id', ct.id,
+      'name', ct.name
+    )) FILTER (WHERE ct.id IS NOT NULL),
+    '[]'::jsonb
+  ) AS category_tags,
+  COALESCE(
+    jsonb_agg(DISTINCT jsonb_build_object(
+      'id', pe.id,
+      'first_name', pe.first_name,
+      'last_name', pe.last_name,
+      'first_name_kana', pe.first_name_kana,
+      'last_name_kana', pe.last_name_kana,
+      'image_path', pe.image_path
+    )) FILTER (WHERE pe.id IS NOT NULL),
+    '[]'::jsonb
+  ) AS performers
+FROM programs p
+LEFT JOIN (
+  SELECT program_id, COUNT(*)::bigint AS view_count
+  FROM watch_histories
+  GROUP BY program_id
+) wc ON wc.program_id = p.id
+LEFT JOIN program_category_tags pct ON p.id = pct.program_id
+LEFT JOIN category_tags ct ON pct.tag_id = ct.id
+LEFT JOIN program_performers pp ON p.id = pp.program_id
+LEFT JOIN performers pe ON pp.performer_id = pe.id
+WHERE p.id = $1
+GROUP BY
+  p.id,
+  p.title,
+  p.video_path,
+  p.thumbnail_path,
+  p.description,
+  wc.view_count,
+  p.created_at,
+  p.updated_at
+`
+
+type GetProgramDetailsByIDParams struct {
+	ID     int64  `json:"id"`
+	UserID string `json:"user_id"`
+}
+
+type GetProgramDetailsByIDRow struct {
+	ProgramID        int64          `json:"program_id"`
+	Title            string         `json:"title"`
+	VideoPath        string         `json:"video_path"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	Description      sql.NullString `json:"description"`
+	ViewCount        int64          `json:"view_count"`
+	LikeCount        int64          `json:"like_count"`
+	Liked            bool           `json:"liked"`
+	ProgramCreatedAt time.Time      `json:"program_created_at"`
+	ProgramUpdatedAt time.Time      `json:"program_updated_at"`
+	CategoryTags     interface{}    `json:"category_tags"`
+	Performers       interface{}    `json:"performers"`
+}
+
+func (q *Queries) GetProgramDetailsByID(ctx context.Context, arg GetProgramDetailsByIDParams) (GetProgramDetailsByIDRow, error) {
+	row := q.db.QueryRowContext(ctx, getProgramDetailsByID, arg.ID, arg.UserID)
+	var i GetProgramDetailsByIDRow
+	err := row.Scan(
+		&i.ProgramID,
+		&i.Title,
+		&i.VideoPath,
+		&i.ThumbnailPath,
+		&i.Description,
+		&i.ViewCount,
+		&i.LikeCount,
+		&i.Liked,
+		&i.ProgramCreatedAt,
+		&i.ProgramUpdatedAt,
+		&i.CategoryTags,
+		&i.Performers,
+	)
+	return i, err
+}
+
 const getPrograms = `-- name: GetPrograms :many
 SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
   COALESCE(wc.view_count, 0)::bigint AS view_count,
+  COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
       'id', ct.id,
@@ -183,6 +295,7 @@ type GetProgramsRow struct {
 	Title         string         `json:"title"`
 	ThumbnailPath sql.NullString `json:"thumbnail_path"`
 	ViewCount     int64          `json:"view_count"`
+	LikeCount     int64          `json:"like_count"`
 	CategoryTags  interface{}    `json:"category_tags"`
 }
 
@@ -200,6 +313,7 @@ func (q *Queries) GetPrograms(ctx context.Context, arg GetProgramsParams) ([]Get
 			&i.Title,
 			&i.ThumbnailPath,
 			&i.ViewCount,
+			&i.LikeCount,
 			&i.CategoryTags,
 		); err != nil {
 			return nil, err
@@ -220,7 +334,8 @@ SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  COALESCE(wc.view_count, 0)::bigint AS view_count
+  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count
 FROM programs p
 LEFT JOIN (
   SELECT program_id, COUNT(*)::bigint AS view_count
@@ -236,6 +351,7 @@ type GetTopProgramsRow struct {
 	Title         string         `json:"title"`
 	ThumbnailPath sql.NullString `json:"thumbnail_path"`
 	ViewCount     int64          `json:"view_count"`
+	LikeCount     int64          `json:"like_count"`
 }
 
 func (q *Queries) GetTopPrograms(ctx context.Context) ([]GetTopProgramsRow, error) {
@@ -252,6 +368,7 @@ func (q *Queries) GetTopPrograms(ctx context.Context) ([]GetTopProgramsRow, erro
 			&i.Title,
 			&i.ThumbnailPath,
 			&i.ViewCount,
+			&i.LikeCount,
 		); err != nil {
 			return nil, err
 		}

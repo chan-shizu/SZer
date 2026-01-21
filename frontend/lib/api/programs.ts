@@ -21,6 +21,8 @@ export type ProgramDetails = {
   title: string;
   video_url: string;
   view_count: number;
+  like_count: number;
+  liked: boolean;
   thumbnail_url: string | null;
   description: string | null;
   program_created_at: string;
@@ -38,6 +40,7 @@ export type ProgramListItem = {
   program_id: number;
   title: string;
   view_count: number;
+  like_count: number;
   thumbnail_url: string | null;
   category_tags: ProgramDetailsCategoryTag[];
 };
@@ -54,6 +57,7 @@ export type TopProgramItem = {
   program_id: number;
   title: string;
   view_count: number;
+  like_count: number;
   thumbnail_url: string | null;
 };
 

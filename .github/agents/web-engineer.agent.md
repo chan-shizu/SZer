@@ -34,7 +34,9 @@
 ### 注意事項
 
 - **認証**: フロントエンドの Better Auth を利用。Backend 側でトークン検証を実装。
-- **migration**: リリース前なので作業の効率化のために db 定義の変更を行う際は\backend\db\migrations\20260108111920_create_initial_tables.up.sql を編集しておく。
+- **migration**: リリース前なので作業の効率化のために db 定義の変更を行う際は\backend\db\migrations\20260108111920_create_initial_tables.
+  up.sql を編集しておく。
+- api の設計は RESTful を意識する。
 
 ## Frontend (ディレクトリ: `frontend/`)
 
@@ -49,6 +51,7 @@
 ## 開発での注意事項
 
 - リファクタなどで不要になった関数、変数などがあれば積極的に削除してコードを綺麗に保つこと。
+- すべての画面でログインが必須
 
 # 開発ワークフローとコマンド
 

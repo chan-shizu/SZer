@@ -23,7 +23,7 @@ type ProgramDetailsPerformer struct {
 	ID           int64   `json:"id"`
 	FullName     string  `json:"full_name"`
 	FullNameKana string  `json:"full_name_kana"`
-	ImageUrl    *string `json:"image_url"`
+	ImageUrl     *string `json:"image_url"`
 }
 
 type ProgramWatchHistory struct {
@@ -48,7 +48,7 @@ type ProgramDetail struct {
 	ViewCount        int64                       `json:"view_count"`
 	LikeCount        int64                       `json:"like_count"`
 	Liked            bool                        `json:"liked"`
-	ThumbnailUrl    *string                     `json:"thumbnail_url"`
+	ThumbnailUrl     *string                     `json:"thumbnail_url"`
 	Description      *string                     `json:"description"`
 	ProgramCreatedAt time.Time                   `json:"program_created_at"`
 	ProgramUpdatedAt time.Time                   `json:"program_updated_at"`
@@ -58,20 +58,20 @@ type ProgramDetail struct {
 }
 
 type ProgramListItem struct {
-	ProgramID        int64                       `json:"program_id"`
-	Title            string                      `json:"title"`
-	ViewCount        int64                       `json:"view_count"`
-	LikeCount        int64                       `json:"like_count"`
-	ThumbnailUrl    *string                     `json:"thumbnail_url"`
-	CategoryTags     []ProgramDetailsCategoryTag `json:"category_tags"`
+	ProgramID    int64                       `json:"program_id"`
+	Title        string                      `json:"title"`
+	ViewCount    int64                       `json:"view_count"`
+	LikeCount    int64                       `json:"like_count"`
+	ThumbnailUrl *string                     `json:"thumbnail_url"`
+	CategoryTags []ProgramDetailsCategoryTag `json:"category_tags"`
 }
 
 type TopProgramItem struct {
-	ProgramID     int64   `json:"program_id"`
-	Title         string  `json:"title"`
-	ViewCount     int64   `json:"view_count"`
-	LikeCount     int64   `json:"like_count"`
-	ThumbnailUrl  *string `json:"thumbnail_url"`
+	ProgramID    int64   `json:"program_id"`
+	Title        string  `json:"title"`
+	ViewCount    int64   `json:"view_count"`
+	LikeCount    int64   `json:"like_count"`
+	ThumbnailUrl *string `json:"thumbnail_url"`
 }
 
 type ProgramsUsecase struct {
@@ -139,7 +139,7 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, 
 			ID:           p.ID,
 			FullName:     p.LastName + p.FirstName,
 			FullNameKana: p.LastNameKana + p.FirstNameKana,
-			ImageUrl:    buildPublicFileURLPtr(p.ImagePath),
+			ImageUrl:     buildPublicFileURLPtr(p.ImagePath),
 		})
 	}
 
@@ -150,7 +150,7 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, 
 		ViewCount:        program.ViewCount,
 		LikeCount:        program.LikeCount,
 		Liked:            program.Liked,
-		ThumbnailUrl:    buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
+		ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 		Description:      nullStringPtr(program.Description),
 		ProgramCreatedAt: program.ProgramCreatedAt,
 		ProgramUpdatedAt: program.ProgramUpdatedAt,
@@ -227,12 +227,12 @@ func (u *ProgramsUsecase) ListPrograms(ctx context.Context, title string, tagIDs
 		}
 
 		results = append(results, ProgramListItem{
-			ProgramID:     program.ProgramID,
-			Title:         program.Title,
-			ViewCount:     program.ViewCount,
-			LikeCount:     program.LikeCount,
-			ThumbnailUrl:  buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
-			CategoryTags:  categoryTags,
+			ProgramID:    program.ProgramID,
+			Title:        program.Title,
+			ViewCount:    program.ViewCount,
+			LikeCount:    program.LikeCount,
+			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
+			CategoryTags: categoryTags,
 		})
 	}
 
@@ -259,6 +259,65 @@ func (u *ProgramsUsecase) ListTopPrograms(ctx context.Context) ([]TopProgramItem
 	return results, nil
 }
 
+func (u *ProgramsUsecase) ListWatchingPrograms(ctx context.Context, userID string) ([]ProgramListItem, error) {
+	rows, err := u.q.ListWatchingProgramsByUser(ctx, db.ListWatchingProgramsByUserParams{UserID: userID})
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]ProgramListItem, 0, len(rows))
+	for _, row := range rows {
+		categoryTagsJSON, err := normalizeJSONBytes(row.CategoryTags)
+		if err != nil {
+			return nil, err
+		}
+		var categoryTags []ProgramDetailsCategoryTag
+		if err := json.Unmarshal(categoryTagsJSON, &categoryTags); err != nil {
+			return nil, err
+		}
+
+		results = append(results, ProgramListItem{
+			ProgramID:    row.ProgramID,
+			Title:        row.Title,
+			ViewCount:    row.ViewCount,
+			LikeCount:    row.LikeCount,
+			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
+			CategoryTags: categoryTags,
+		})
+	}
+
+	return results, nil
+}
+
+func (u *ProgramsUsecase) ListLikedPrograms(ctx context.Context, userID string) ([]ProgramListItem, error) {
+	rows, err := u.q.ListLikedProgramsByUser(ctx, db.ListLikedProgramsByUserParams{UserID: userID})
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]ProgramListItem, 0, len(rows))
+	for _, row := range rows {
+		categoryTagsJSON, err := normalizeJSONBytes(row.CategoryTags)
+		if err != nil {
+			return nil, err
+		}
+		var categoryTags []ProgramDetailsCategoryTag
+		if err := json.Unmarshal(categoryTagsJSON, &categoryTags); err != nil {
+			return nil, err
+		}
+
+		results = append(results, ProgramListItem{
+			ProgramID:    row.ProgramID,
+			Title:        row.Title,
+			ViewCount:    row.ViewCount,
+			LikeCount:    row.LikeCount,
+			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
+			CategoryTags: categoryTags,
+		})
+	}
+
+	return results, nil
+}
 
 // private functions
 

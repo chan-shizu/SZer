@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home, Search } from "lucide-react";
+import { Home, Search, User } from "lucide-react";
 
 const tabs = [
   {
@@ -11,6 +11,11 @@ const tabs = [
     href: "/programs",
     label: "探す",
     icon: Search,
+  },
+  {
+    href: "/mypage",
+    label: "マイページ",
+    icon: User,
   },
 ];
 

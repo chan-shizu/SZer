@@ -13,7 +13,7 @@ import (
 )
 
 type Handler struct {
-	programs      *usecase.ProgramsUsecase
+	programs *usecase.ProgramsUsecase
 }
 
 type upsertWatchHistoryRequest struct {
@@ -182,4 +182,36 @@ func (h *Handler) Top(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"programs": programs,
 	})
+}
+
+func (h *Handler) ListWatchingPrograms(c *gin.Context) {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	programs, err := h.programs.ListWatchingPrograms(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list watching programs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"programs": programs})
+}
+
+func (h *Handler) ListLikedPrograms(c *gin.Context) {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	programs, err := h.programs.ListLikedPrograms(c.Request.Context(), userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list liked programs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"programs": programs})
 }

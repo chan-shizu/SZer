@@ -17,6 +17,8 @@ func NewRouter(q *db.Queries) *gin.Engine {
 	router.Use(middleware.RequireAuth())
 
 	router.GET("/top", h.Top)
+	router.GET("/top/liked", h.TopLiked)
+	router.GET("/top/viewed", h.TopViewed)
 	router.GET("/programs/:id", h.ProgramDetails)
 	router.POST("/programs/:id/like", h.LikeProgram)
 	router.DELETE("/programs/:id/like", h.UnlikeProgram)

@@ -11,6 +11,7 @@
 - **Frontend**: Next.js (User Interface & Auth)
 - **Database**: PostgreSQL
 - **Storage**: MinIO
+- **開発環境の OS**: Windows 11
 
 # 技術スタック
 

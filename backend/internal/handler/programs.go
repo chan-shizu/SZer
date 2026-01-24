@@ -184,6 +184,30 @@ func (h *Handler) Top(c *gin.Context) {
 	})
 }
 
+func (h *Handler) TopLiked(c *gin.Context) {
+	programs, err := h.programs.ListTopLikedPrograms(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get top liked programs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"programs": programs,
+	})
+}
+
+func (h *Handler) TopViewed(c *gin.Context) {
+	programs, err := h.programs.ListTopViewedPrograms(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get top viewed programs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"programs": programs,
+	})
+}
+
 func (h *Handler) ListWatchingPrograms(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {

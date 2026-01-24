@@ -53,6 +53,14 @@ export type GetTopProgramsResponse = {
   programs: TopProgramItem[];
 };
 
+export type GetTopLikedProgramsResponse = {
+  programs: TopProgramItem[];
+};
+
+export type GetTopViewedProgramsResponse = {
+  programs: TopProgramItem[];
+};
+
 export type TopProgramItem = {
   program_id: number;
   title: string;
@@ -90,4 +98,12 @@ export async function getPrograms(title?: string, tagIds?: Array<number | string
 
 export async function getTopPrograms(): Promise<GetTopProgramsResponse> {
   return backendFetchJson<GetTopProgramsResponse>("/top", { method: "GET", cache: "no-store" });
+}
+
+export async function getTopLikedPrograms(): Promise<GetTopLikedProgramsResponse> {
+  return backendFetchJson<GetTopLikedProgramsResponse>("/top/liked", { method: "GET", cache: "no-store" });
+}
+
+export async function getTopViewedPrograms(): Promise<GetTopViewedProgramsResponse> {
+  return backendFetchJson<GetTopViewedProgramsResponse>("/top/viewed", { method: "GET", cache: "no-store" });
 }

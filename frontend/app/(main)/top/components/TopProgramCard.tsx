@@ -13,7 +13,7 @@ export function TopProgramCard({ program }: Props) {
     <div className="snap-start">
       <Link href={`/programs/${program.program_id}`} className="block">
         {program.thumbnail_url ? (
-          <div className="relative w-40 h-32">
+          <div className="relative w-40 h-20">
             <Image
               src={program.thumbnail_url}
               alt={program.title}
@@ -23,7 +23,7 @@ export function TopProgramCard({ program }: Props) {
             />
           </div>
         ) : (
-          <div className="w-48 h-24 rounded bg-gray-100 flex items-center justify-center text-foreground">No Image</div>
+          <div className="w-40 h-24 rounded bg-gray-100 flex items-center justify-center text-foreground">No Image</div>
         )}
         <div className="mt-2 text-sm font-semibold text-foreground line-clamp-2">{program.title}</div>
         <div className="mt-1 flex items-center gap-x-3 text-xs text-gray-600">

@@ -259,6 +259,46 @@ func (u *ProgramsUsecase) ListTopPrograms(ctx context.Context) ([]TopProgramItem
 	return results, nil
 }
 
+func (u *ProgramsUsecase) ListTopLikedPrograms(ctx context.Context) ([]TopProgramItem, error) {
+	rows, err := u.q.GetTopLikedPrograms(ctx, sql.NullInt32{Int32: 7, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]TopProgramItem, 0, len(rows))
+	for _, row := range rows {
+		results = append(results, TopProgramItem{
+			ProgramID:    row.ProgramID,
+			Title:        row.Title,
+			ViewCount:    row.ViewCount,
+			LikeCount:    row.LikeCount,
+			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
+		})
+	}
+
+	return results, nil
+}
+
+func (u *ProgramsUsecase) ListTopViewedPrograms(ctx context.Context) ([]TopProgramItem, error) {
+	rows, err := u.q.GetTopViewedPrograms(ctx, sql.NullInt32{Int32: 7, Valid: true})
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]TopProgramItem, 0, len(rows))
+	for _, row := range rows {
+		results = append(results, TopProgramItem{
+			ProgramID:    row.ProgramID,
+			Title:        row.Title,
+			ViewCount:    row.ViewCount,
+			LikeCount:    row.LikeCount,
+			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
+		})
+	}
+
+	return results, nil
+}
+
 func (u *ProgramsUsecase) ListWatchingPrograms(ctx context.Context, userID string) ([]ProgramListItem, error) {
 	rows, err := u.q.ListWatchingProgramsByUser(ctx, db.ListWatchingProgramsByUserParams{UserID: userID})
 	if err != nil {

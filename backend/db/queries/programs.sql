@@ -167,7 +167,82 @@ LEFT JOIN (
   GROUP BY program_id
 ) wc ON wc.program_id = p.id
 ORDER BY p.created_at DESC
-LIMIT 5;
+LIMIT 7;
+
+-- name: GetTopLikedPrograms :many
+WITH params AS (
+  SELECT COALESCE(sqlc.narg('limit')::int, 7)::int AS n
+),
+top_likes AS (
+  SELECT
+    l.program_id,
+    COUNT(*)::bigint AS like_count
+  FROM likes l
+  GROUP BY l.program_id
+  ORDER BY like_count DESC
+  LIMIT (SELECT n FROM params)
+),
+fallback AS (
+  SELECT
+    p.id AS program_id,
+    0::bigint AS like_count
+  FROM programs p
+  WHERE p.id NOT IN (SELECT program_id FROM top_likes)
+  ORDER BY p.created_at DESC
+  LIMIT GREATEST((SELECT n FROM params) - (SELECT COUNT(*) FROM top_likes), 0)
+),
+selected AS (
+  SELECT program_id, like_count FROM top_likes
+  UNION ALL
+  SELECT program_id, like_count FROM fallback
+),
+view_counts AS (
+  SELECT
+    wh.program_id,
+    COUNT(*)::bigint AS view_count
+  FROM watch_histories wh
+  WHERE wh.program_id IN (SELECT program_id FROM selected)
+  GROUP BY wh.program_id
+)
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path,
+  COALESCE(vc.view_count, 0)::bigint AS view_count,
+  s.like_count
+FROM selected s
+JOIN programs p ON p.id = s.program_id
+LEFT JOIN view_counts vc ON vc.program_id = p.id
+ORDER BY s.like_count DESC, p.created_at DESC;
+
+-- name: GetTopViewedPrograms :many
+WITH top_view_counts AS (
+  SELECT
+    wh.program_id,
+    COUNT(*)::bigint AS view_count
+  FROM watch_histories wh
+  GROUP BY wh.program_id
+  ORDER BY view_count DESC
+  LIMIT COALESCE(sqlc.narg('limit')::int, 7)
+),
+likes_count AS (
+  SELECT
+    l.program_id,
+    COUNT(*)::bigint AS like_count
+  FROM likes l
+  WHERE l.program_id IN (SELECT program_id FROM top_view_counts)
+  GROUP BY l.program_id
+)
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path,
+  tvc.view_count,
+  COALESCE(lc.like_count, 0)::bigint AS like_count
+FROM top_view_counts tvc
+JOIN programs p ON p.id = tvc.program_id
+LEFT JOIN likes_count lc ON lc.program_id = p.id
+ORDER BY tvc.view_count DESC, p.created_at DESC;
 
 -- name: ExistsProgram :one
 SELECT EXISTS(

@@ -329,6 +329,90 @@ func (q *Queries) GetPrograms(ctx context.Context, arg GetProgramsParams) ([]Get
 	return items, nil
 }
 
+const getTopLikedPrograms = `-- name: GetTopLikedPrograms :many
+WITH params AS (
+  SELECT COALESCE($1::int, 7)::int AS n
+),
+top_likes AS (
+  SELECT
+    l.program_id,
+    COUNT(*)::bigint AS like_count
+  FROM likes l
+  GROUP BY l.program_id
+  ORDER BY like_count DESC
+  LIMIT (SELECT n FROM params)
+),
+fallback AS (
+  SELECT
+    p.id AS program_id,
+    0::bigint AS like_count
+  FROM programs p
+  WHERE p.id NOT IN (SELECT program_id FROM top_likes)
+  ORDER BY p.created_at DESC
+  LIMIT GREATEST((SELECT n FROM params) - (SELECT COUNT(*) FROM top_likes), 0)
+),
+selected AS (
+  SELECT program_id, like_count FROM top_likes
+  UNION ALL
+  SELECT program_id, like_count FROM fallback
+),
+view_counts AS (
+  SELECT
+    wh.program_id,
+    COUNT(*)::bigint AS view_count
+  FROM watch_histories wh
+  WHERE wh.program_id IN (SELECT program_id FROM selected)
+  GROUP BY wh.program_id
+)
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path,
+  COALESCE(vc.view_count, 0)::bigint AS view_count,
+  s.like_count
+FROM selected s
+JOIN programs p ON p.id = s.program_id
+LEFT JOIN view_counts vc ON vc.program_id = p.id
+ORDER BY s.like_count DESC, p.created_at DESC
+`
+
+type GetTopLikedProgramsRow struct {
+	ProgramID     int64          `json:"program_id"`
+	Title         string         `json:"title"`
+	ThumbnailPath sql.NullString `json:"thumbnail_path"`
+	ViewCount     int64          `json:"view_count"`
+	LikeCount     int64          `json:"like_count"`
+}
+
+func (q *Queries) GetTopLikedPrograms(ctx context.Context, limit sql.NullInt32) ([]GetTopLikedProgramsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTopLikedPrograms, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTopLikedProgramsRow
+	for rows.Next() {
+		var i GetTopLikedProgramsRow
+		if err := rows.Scan(
+			&i.ProgramID,
+			&i.Title,
+			&i.ThumbnailPath,
+			&i.ViewCount,
+			&i.LikeCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTopPrograms = `-- name: GetTopPrograms :many
 SELECT
   p.id AS program_id,
@@ -343,7 +427,7 @@ LEFT JOIN (
   GROUP BY program_id
 ) wc ON wc.program_id = p.id
 ORDER BY p.created_at DESC
-LIMIT 5
+LIMIT 7
 `
 
 type GetTopProgramsRow struct {
@@ -363,6 +447,73 @@ func (q *Queries) GetTopPrograms(ctx context.Context) ([]GetTopProgramsRow, erro
 	var items []GetTopProgramsRow
 	for rows.Next() {
 		var i GetTopProgramsRow
+		if err := rows.Scan(
+			&i.ProgramID,
+			&i.Title,
+			&i.ThumbnailPath,
+			&i.ViewCount,
+			&i.LikeCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTopViewedPrograms = `-- name: GetTopViewedPrograms :many
+WITH top_view_counts AS (
+  SELECT
+    wh.program_id,
+    COUNT(*)::bigint AS view_count
+  FROM watch_histories wh
+  GROUP BY wh.program_id
+  ORDER BY view_count DESC
+  LIMIT COALESCE($1::int, 7)
+),
+likes_count AS (
+  SELECT
+    l.program_id,
+    COUNT(*)::bigint AS like_count
+  FROM likes l
+  WHERE l.program_id IN (SELECT program_id FROM top_view_counts)
+  GROUP BY l.program_id
+)
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path,
+  tvc.view_count,
+  COALESCE(lc.like_count, 0)::bigint AS like_count
+FROM top_view_counts tvc
+JOIN programs p ON p.id = tvc.program_id
+LEFT JOIN likes_count lc ON lc.program_id = p.id
+ORDER BY tvc.view_count DESC, p.created_at DESC
+`
+
+type GetTopViewedProgramsRow struct {
+	ProgramID     int64          `json:"program_id"`
+	Title         string         `json:"title"`
+	ThumbnailPath sql.NullString `json:"thumbnail_path"`
+	ViewCount     int64          `json:"view_count"`
+	LikeCount     int64          `json:"like_count"`
+}
+
+func (q *Queries) GetTopViewedPrograms(ctx context.Context, limit sql.NullInt32) ([]GetTopViewedProgramsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTopViewedPrograms, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTopViewedProgramsRow
+	for rows.Next() {
+		var i GetTopViewedProgramsRow
 		if err := rows.Scan(
 			&i.ProgramID,
 			&i.Title,

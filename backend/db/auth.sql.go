@@ -23,7 +23,7 @@ INSERT INTO "user" (
 ) VALUES (
   $1, $2, $3, $4, $5, now(), now()
 )
-RETURNING id, name, email, "emailVerified", image, "createdAt", "updatedAt"
+RETURNING id, name, email, "emailVerified", image, points, "createdAt", "updatedAt"
 `
 
 type CreateAuthUserParams struct {
@@ -49,6 +49,7 @@ func (q *Queries) CreateAuthUser(ctx context.Context, arg CreateAuthUserParams) 
 		&i.Email,
 		&i.EmailVerified,
 		&i.Image,
+		&i.Points,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

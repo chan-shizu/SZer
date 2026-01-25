@@ -10,7 +10,8 @@ INSERT INTO "user" (
 ) VALUES (
   $1, $2, $3, $4, $5, now(), now()
 )
-RETURNING id, name, email, "emailVerified", image, "createdAt", "updatedAt";
+RETURNING id, name, email, "emailVerified", image, points, "createdAt", "updatedAt";
+
 
 -- name: CreateCredentialAccount :one
 INSERT INTO "account" (

@@ -11,7 +11,8 @@ import (
 func NewRouter(q *db.Queries) *gin.Engine {
 	router := gin.Default()
 	programsUC := usecase.NewProgramsUsecase(q)
-	h := handler.New(programsUC)
+	usersUC := usecase.NewUsersUsecase(q)
+	h := handler.New(programsUC, usersUC)
 
 	// Require better-auth session for backend APIs.
 	router.Use(middleware.RequireAuth())
@@ -25,6 +26,8 @@ func NewRouter(q *db.Queries) *gin.Engine {
 	router.GET("/programs", h.ListPrograms)
 	router.GET("/me/watching-programs", h.ListWatchingPrograms)
 	router.GET("/me/liked-programs", h.ListLikedPrograms)
+	router.GET("/me/points", h.GetPoints)
+	router.POST("/me/points/add", h.AddPoints)
 	router.POST("/watch-histories", h.UpsertWatchHistory)
 
 	return router

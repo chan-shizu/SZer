@@ -57,3 +57,30 @@ Cookie: {{cookie}}
 	"is_completed": false
 }
 
+### ポイント +300 付与
+POST http://localhost:8080/me/points/add
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+	"amount": 100
+}
+
+### (Next経由) ポイント +300 付与
+POST http://localhost:3000/api/me/points/add
+Content-Type: application/json
+Cookie: {{cookie}}
+
+{
+	"amount": 100
+}
+
+### 現在ポイント取得
+GET http://localhost:8080/me/points
+Cookie: {{cookie}}
+
+### (Next経由) 現在ポイント取得
+GET http://localhost:3000/api/me/points
+Cookie: {{cookie}}
+
+

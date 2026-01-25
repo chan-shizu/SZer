@@ -56,6 +56,7 @@ create table "user" (
   "email" text not null unique,
   "emailVerified" boolean not null,
   "image" text,
+  "points" integer not null default 0,
   "createdAt" timestamptz default CURRENT_TIMESTAMP not null,
   "updatedAt" timestamptz default CURRENT_TIMESTAMP not null
 );

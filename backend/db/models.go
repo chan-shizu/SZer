@@ -95,6 +95,7 @@ type User struct {
 	Email         string         `json:"email"`
 	EmailVerified bool           `json:"emailVerified"`
 	Image         sql.NullString `json:"image"`
+	Points        int32          `json:"points"`
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
 }

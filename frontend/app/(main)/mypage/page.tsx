@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { getLikedPrograms, getWatchingPrograms } from "@/lib/api/mypage";
+import { ApiError } from "@/lib/api/error";
 import { ProgramCard } from "@/app/(main)/programs/components/ProgramCard";
 
 type Tab = "watching" | "liked";

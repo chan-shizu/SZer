@@ -1,7 +1,6 @@
 import { getTopLikedPrograms, getTopPrograms, getTopViewedPrograms } from "@/lib/api/programs";
-import { ApiError } from "@/lib/api/error";
-import { redirect } from "next/navigation";
 import { TopProgramCard } from "./components/TopProgramCard";
+import LogoAndName from "./components/LogoAndName";
 
 export const dynamic = "force-dynamic";
 
@@ -19,15 +18,13 @@ export default async function TopPage() {
     topLikedPrograms = likedRes.programs;
     topViewedPrograms = viewedRes.programs;
   } catch (err) {
-    if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
-      redirect("/login");
-    }
     throw err;
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col py-12 px-4 bg-white dark:bg-black sm:px-6 space-y-10">
+    <div className="min-h-screen w-full max-w-3xl pb-12 px-4 bg-white dark:bg-black sm:px-6">
+      <LogoAndName />
+      <div className="space-y-10">
         <section>
           <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">新着番組</h1>
 
@@ -63,7 +60,7 @@ export default async function TopPage() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </div>
   );
 }

@@ -16,6 +16,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // 認証が必要なのは /mypage 配下ページと /api/me 配下APIのみ
+  const needsAuth = pathname.startsWith("/mypage") || pathname.startsWith("/api/me");
+  if (!needsAuth) {
+    return NextResponse.next();
+  }
+
   let session: unknown;
   try {
     session = await auth.api.getSession({ headers: request.headers });
@@ -37,7 +43,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match everything except Next internals and public auth pages.
-    "/((?!_next/static|_next/image|favicon.ico|api/auth|login|signup).*)",
+    // /mypage配下と/api/me配下のみ認証ガード
+    "/mypage/:path*",
+    "/api/me/:path*",
   ],
 };

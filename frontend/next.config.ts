@@ -73,8 +73,8 @@ const nextConfig = {
   },
   webpack: (config: { watchOptions?: { poll?: number; aggregateTimeout?: number } }) => {
     config.watchOptions = {
-      poll: 300,
-      aggregateTimeout: 300,
+      poll: 1500, // 監視間隔を1.5秒に拡大しCPU負荷を軽減
+      aggregateTimeout: 600, // 変更後のバッチ適用待ち時間も少し長めに
     };
     return config;
   },

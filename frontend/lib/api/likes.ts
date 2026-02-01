@@ -9,6 +9,7 @@ export async function likeProgram(programId: number | string): Promise<LikeRespo
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+    console.error(`[API通信エラー] likeProgram:`, { programId, status: res.status, response: text });
     throw new Error(text || `Request failed with status ${res.status}`);
   }
 
@@ -21,6 +22,7 @@ export async function unlikeProgram(programId: number | string): Promise<LikeRes
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+    console.error(`[API通信エラー] unlikeProgram:`, { programId, status: res.status, response: text });
     throw new Error(text || `Request failed with status ${res.status}`);
   }
 

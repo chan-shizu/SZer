@@ -73,7 +73,15 @@ import { backendFetchJson } from "./server";
 
 export async function getProgramDetail(id: number | string): Promise<GetProgramDetailResponse> {
   const encodedId = encodeURIComponent(String(id));
-  return backendFetchJson<GetProgramDetailResponse>(`/programs/${encodedId}`, { method: "GET", cache: "no-store" });
+  try {
+    return await backendFetchJson<GetProgramDetailResponse>(`/programs/${encodedId}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+  } catch (err) {
+    console.error(`[API通信エラー] getProgramDetail:`, { id, err });
+    throw err;
+  }
 }
 
 export async function getPrograms(title?: string, tagIds?: Array<number | string>): Promise<GetProgramsResponse> {
@@ -93,15 +101,30 @@ export async function getPrograms(title?: string, tagIds?: Array<number | string
 
   const queryString = params.toString();
   const path = queryString ? `/programs?${queryString}` : "/programs";
-  return backendFetchJson<GetProgramsResponse>(path, { method: "GET", cache: "no-store" });
+  try {
+    return await backendFetchJson<GetProgramsResponse>(path, { method: "GET", cache: "no-store" });
+  } catch (err) {
+    console.error(`[API通信エラー] getPrograms:`, { title, tagIds, err });
+    throw err;
+  }
 }
 
 export async function getTopPrograms(): Promise<GetTopProgramsResponse> {
-  return backendFetchJson<GetTopProgramsResponse>("/top", { method: "GET", cache: "no-store" });
+  try {
+    return await backendFetchJson<GetTopProgramsResponse>("/top", { method: "GET", cache: "no-store" });
+  } catch (err) {
+    console.error(`[API通信エラー] getTopPrograms:`, { err });
+    throw err;
+  }
 }
 
 export async function getTopLikedPrograms(): Promise<GetTopLikedProgramsResponse> {
-  return backendFetchJson<GetTopLikedProgramsResponse>("/top/liked", { method: "GET", cache: "no-store" });
+  try {
+    return await backendFetchJson<GetTopLikedProgramsResponse>("/top/liked", { method: "GET", cache: "no-store" });
+  } catch (err) {
+    console.error(`[API通信エラー] getTopLikedPrograms:`, { err });
+    throw err;
+  }
 }
 
 export async function getTopViewedPrograms(): Promise<GetTopViewedProgramsResponse> {

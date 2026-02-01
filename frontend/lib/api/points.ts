@@ -12,6 +12,7 @@ export async function addPoints(amount: 100 | 500 | 1000): Promise<AddPointsResp
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+    console.error(`[API通信エラー] addPoints:`, { amount, status: res.status, response: text });
     throw new Error(text || `Request failed with status ${res.status}`);
   }
 

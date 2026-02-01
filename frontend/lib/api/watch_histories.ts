@@ -27,6 +27,11 @@ export async function upsertWatchHistory(req: UpsertWatchHistoryRequest): Promis
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+    console.error(`[API通信エラー] upsertWatchHistory:`, {
+      req,
+      status: res.status,
+      response: text,
+    });
     throw new Error(text || `Request failed with status ${res.status}`);
   }
 

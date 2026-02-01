@@ -2,9 +2,19 @@ import { backendFetchJson } from "./server";
 import type { GetProgramsResponse } from "./programs";
 
 export async function getWatchingPrograms(): Promise<GetProgramsResponse> {
-  return backendFetchJson<GetProgramsResponse>("/me/watching-programs", { method: "GET", cache: "no-store" });
+  try {
+    return await backendFetchJson<GetProgramsResponse>("/me/watching-programs", { method: "GET", cache: "no-store" });
+  } catch (err) {
+    console.error(`[API通信エラー] getWatchingPrograms:`, { err });
+    throw err;
+  }
 }
 
 export async function getLikedPrograms(): Promise<GetProgramsResponse> {
-  return backendFetchJson<GetProgramsResponse>("/me/liked-programs", { method: "GET", cache: "no-store" });
+  try {
+    return await backendFetchJson<GetProgramsResponse>("/me/liked-programs", { method: "GET", cache: "no-store" });
+  } catch (err) {
+    console.error(`[API通信エラー] getLikedPrograms:`, { err });
+    throw err;
+  }
 }

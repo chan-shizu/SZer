@@ -55,6 +55,13 @@ export async function backendFetchJson<T>(path: string, init: RequestInit = {}):
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
+    console.error(`[API通信エラー] backendFetchJson:`, {
+      path,
+      url,
+      status: res.status,
+      response: text,
+      init,
+    });
     throw new ApiError({
       status: res.status,
       code: `HTTP_${res.status}`,

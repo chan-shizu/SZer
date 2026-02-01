@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"time"
 )
 
@@ -38,51 +37,117 @@ func (q *Queries) GetIncompleteWatchHistoryByUserAndProgram(ctx context.Context,
 	return i, err
 }
 
-const listWatchHistoriesByUser = `-- name: ListWatchHistoriesByUser :many
-SELECT id, user_id, program_id, position_seconds, is_completed, last_watched_at, created_at, updated_at
-FROM watch_histories
-WHERE user_id = $1
-ORDER BY last_watched_at DESC
-LIMIT COALESCE($3::int, 50)
-OFFSET COALESCE($2::int, 0)
+const insertCompletedWatchHistory = `-- name: InsertCompletedWatchHistory :one
+INSERT INTO watch_histories (
+  user_id,
+  program_id,
+  position_seconds,
+  is_completed,
+  last_watched_at
+)
+VALUES ($1, $2, $3, TRUE, now())
+RETURNING id, user_id, program_id, position_seconds, is_completed, last_watched_at, created_at, updated_at
 `
 
-type ListWatchHistoriesByUserParams struct {
-	UserID string        `json:"user_id"`
-	Offset sql.NullInt32 `json:"offset"`
-	Limit  sql.NullInt32 `json:"limit"`
+type InsertCompletedWatchHistoryParams struct {
+	UserID          string `json:"user_id"`
+	ProgramID       int64  `json:"program_id"`
+	PositionSeconds int32  `json:"position_seconds"`
 }
 
-func (q *Queries) ListWatchHistoriesByUser(ctx context.Context, arg ListWatchHistoriesByUserParams) ([]WatchHistory, error) {
-	rows, err := q.db.QueryContext(ctx, listWatchHistoriesByUser, arg.UserID, arg.Offset, arg.Limit)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []WatchHistory
-	for rows.Next() {
-		var i WatchHistory
-		if err := rows.Scan(
-			&i.ID,
-			&i.UserID,
-			&i.ProgramID,
-			&i.PositionSeconds,
-			&i.IsCompleted,
-			&i.LastWatchedAt,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) InsertCompletedWatchHistory(ctx context.Context, arg InsertCompletedWatchHistoryParams) (WatchHistory, error) {
+	row := q.db.QueryRowContext(ctx, insertCompletedWatchHistory, arg.UserID, arg.ProgramID, arg.PositionSeconds)
+	var i WatchHistory
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ProgramID,
+		&i.PositionSeconds,
+		&i.IsCompleted,
+		&i.LastWatchedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const insertIncompleteWatchHistory = `-- name: InsertIncompleteWatchHistory :one
+INSERT INTO watch_histories (
+  user_id,
+  program_id,
+  position_seconds,
+  is_completed,
+  last_watched_at
+)
+VALUES ($1, $2, $3, $4, now())
+RETURNING id, user_id, program_id, position_seconds, is_completed, last_watched_at, created_at, updated_at
+`
+
+type InsertIncompleteWatchHistoryParams struct {
+	UserID          string `json:"user_id"`
+	ProgramID       int64  `json:"program_id"`
+	PositionSeconds int32  `json:"position_seconds"`
+	IsCompleted     bool   `json:"is_completed"`
+}
+
+func (q *Queries) InsertIncompleteWatchHistory(ctx context.Context, arg InsertIncompleteWatchHistoryParams) (WatchHistory, error) {
+	row := q.db.QueryRowContext(ctx, insertIncompleteWatchHistory,
+		arg.UserID,
+		arg.ProgramID,
+		arg.PositionSeconds,
+		arg.IsCompleted,
+	)
+	var i WatchHistory
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ProgramID,
+		&i.PositionSeconds,
+		&i.IsCompleted,
+		&i.LastWatchedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateIncompleteWatchHistory = `-- name: UpdateIncompleteWatchHistory :one
+UPDATE watch_histories
+SET
+  position_seconds = $3,
+  is_completed = $4,
+  last_watched_at = now(),
+  updated_at = now()
+WHERE user_id = $1 AND program_id = $2 AND is_completed = FALSE
+RETURNING id, user_id, program_id, position_seconds, is_completed, last_watched_at, created_at, updated_at
+`
+
+type UpdateIncompleteWatchHistoryParams struct {
+	UserID          string `json:"user_id"`
+	ProgramID       int64  `json:"program_id"`
+	PositionSeconds int32  `json:"position_seconds"`
+	IsCompleted     bool   `json:"is_completed"`
+}
+
+func (q *Queries) UpdateIncompleteWatchHistory(ctx context.Context, arg UpdateIncompleteWatchHistoryParams) (WatchHistory, error) {
+	row := q.db.QueryRowContext(ctx, updateIncompleteWatchHistory,
+		arg.UserID,
+		arg.ProgramID,
+		arg.PositionSeconds,
+		arg.IsCompleted,
+	)
+	var i WatchHistory
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ProgramID,
+		&i.PositionSeconds,
+		&i.IsCompleted,
+		&i.LastWatchedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const upsertWatchHistory = `-- name: UpsertWatchHistory :one

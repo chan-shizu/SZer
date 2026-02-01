@@ -66,6 +66,7 @@ type Program struct {
 	Description   sql.NullString `json:"description"`
 	CreatedAt     time.Time      `json:"created_at"`
 	UpdatedAt     time.Time      `json:"updated_at"`
+	ViewCount     int32          `json:"view_count"`
 }
 
 type ProgramCategoryTag struct {

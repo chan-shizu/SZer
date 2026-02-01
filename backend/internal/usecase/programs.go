@@ -82,8 +82,25 @@ func NewProgramsUsecase(q *db.Queries) *ProgramsUsecase {
 	return &ProgramsUsecase{q: q}
 }
 
-func (u *ProgramsUsecase) UpsertWatchHistory(ctx context.Context, userID string, programID int64, positionSeconds int32, isCompleted bool) (db.UpsertWatchHistoryRow, error) {
-	return u.q.UpsertWatchHistory(ctx, db.UpsertWatchHistoryParams{
+func (u *ProgramsUsecase) UpsertWatchHistory(ctx context.Context, userID string, programID int64, positionSeconds int32, isCompleted bool) (db.WatchHistory, error) {
+	_, err := u.q.GetIncompleteWatchHistoryByUserAndProgram(ctx, db.GetIncompleteWatchHistoryByUserAndProgramParams{
+		UserID:    userID,
+		ProgramID: programID,
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// 未完了履歴がなければINSERT
+			return u.q.InsertIncompleteWatchHistory(ctx, db.InsertIncompleteWatchHistoryParams{
+				UserID:          userID,
+				ProgramID:       programID,
+				PositionSeconds: positionSeconds,
+				IsCompleted:     isCompleted,
+			})
+		}
+		return db.WatchHistory{}, err
+	}
+	// 未完了履歴があればUPDATE
+	return u.q.UpdateIncompleteWatchHistory(ctx, db.UpdateIncompleteWatchHistoryParams{
 		UserID:          userID,
 		ProgramID:       programID,
 		PositionSeconds: positionSeconds,
@@ -101,16 +118,18 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, 
 	}
 
 	var watchHistory *ProgramWatchHistory
-	wh, err := u.q.GetIncompleteWatchHistoryByUserAndProgram(ctx, db.GetIncompleteWatchHistoryByUserAndProgramParams{UserID: userID, ProgramID: id})
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return ProgramDetail{}, err
-		}
-	} else {
-		watchHistory = &ProgramWatchHistory{
-			PositionSeconds: wh.PositionSeconds,
-			IsCompleted:     wh.IsCompleted,
-			LastWatchedAt:   wh.LastWatchedAt,
+	if userID != "" {
+		wh, err := u.q.GetIncompleteWatchHistoryByUserAndProgram(ctx, db.GetIncompleteWatchHistoryByUserAndProgramParams{UserID: userID, ProgramID: id})
+		if err != nil {
+			if !errors.Is(err, sql.ErrNoRows) {
+				return ProgramDetail{}, err
+			}
+		} else {
+			watchHistory = &ProgramWatchHistory{
+				PositionSeconds: wh.PositionSeconds,
+				IsCompleted:     wh.IsCompleted,
+				LastWatchedAt:   wh.LastWatchedAt,
+			}
 		}
 	}
 
@@ -147,7 +166,7 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, 
 		ProgramID:        program.ProgramID,
 		Title:            program.Title,
 		VideoURL:         buildVideoURL(program.VideoPath),
-		ViewCount:        program.ViewCount,
+		ViewCount:        int64(program.ViewCount),
 		LikeCount:        program.LikeCount,
 		Liked:            program.Liked,
 		ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
@@ -229,7 +248,7 @@ func (u *ProgramsUsecase) ListPrograms(ctx context.Context, title string, tagIDs
 		results = append(results, ProgramListItem{
 			ProgramID:    program.ProgramID,
 			Title:        program.Title,
-			ViewCount:    program.ViewCount,
+			ViewCount:    int64(program.ViewCount),
 			LikeCount:    program.LikeCount,
 			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 			CategoryTags: categoryTags,
@@ -250,7 +269,7 @@ func (u *ProgramsUsecase) ListTopPrograms(ctx context.Context) ([]TopProgramItem
 		results = append(results, TopProgramItem{
 			ProgramID:    program.ProgramID,
 			Title:        program.Title,
-			ViewCount:    program.ViewCount,
+			ViewCount:    int64(program.ViewCount),
 			LikeCount:    program.LikeCount,
 			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 		})
@@ -270,7 +289,7 @@ func (u *ProgramsUsecase) ListTopLikedPrograms(ctx context.Context) ([]TopProgra
 		results = append(results, TopProgramItem{
 			ProgramID:    row.ProgramID,
 			Title:        row.Title,
-			ViewCount:    row.ViewCount,
+			ViewCount:    int64(row.ViewCount),
 			LikeCount:    row.LikeCount,
 			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
 		})
@@ -290,7 +309,7 @@ func (u *ProgramsUsecase) ListTopViewedPrograms(ctx context.Context) ([]TopProgr
 		results = append(results, TopProgramItem{
 			ProgramID:    row.ProgramID,
 			Title:        row.Title,
-			ViewCount:    row.ViewCount,
+			ViewCount:    int64(row.ViewCount),
 			LikeCount:    row.LikeCount,
 			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
 		})
@@ -319,7 +338,7 @@ func (u *ProgramsUsecase) ListWatchingPrograms(ctx context.Context, userID strin
 		results = append(results, ProgramListItem{
 			ProgramID:    row.ProgramID,
 			Title:        row.Title,
-			ViewCount:    row.ViewCount,
+			ViewCount:    int64(row.ViewCount),
 			LikeCount:    row.LikeCount,
 			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
 			CategoryTags: categoryTags,
@@ -349,7 +368,7 @@ func (u *ProgramsUsecase) ListLikedPrograms(ctx context.Context, userID string) 
 		results = append(results, ProgramListItem{
 			ProgramID:    row.ProgramID,
 			Title:        row.Title,
-			ViewCount:    row.ViewCount,
+			ViewCount:    int64(row.ViewCount),
 			LikeCount:    row.LikeCount,
 			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
 			CategoryTags: categoryTags,
@@ -357,6 +376,11 @@ func (u *ProgramsUsecase) ListLikedPrograms(ctx context.Context, userID string) 
 	}
 
 	return results, nil
+}
+
+// 視聴回数をインクリメントするメソッドを追加
+func (u *ProgramsUsecase) IncrementViewCount(ctx context.Context, programID int64) error {
+	return u.q.IncrementProgramViewCount(ctx, programID)
 }
 
 // private functions

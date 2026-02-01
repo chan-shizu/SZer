@@ -51,10 +51,34 @@ SELECT id, user_id, program_id, position_seconds, is_completed, last_watched_at,
 FROM watch_histories
 WHERE user_id = $1 AND program_id = $2 AND is_completed = FALSE;
 
--- name: ListWatchHistoriesByUser :many
-SELECT id, user_id, program_id, position_seconds, is_completed, last_watched_at, created_at, updated_at
-FROM watch_histories
-WHERE user_id = $1
-ORDER BY last_watched_at DESC
-LIMIT COALESCE(sqlc.narg('limit')::int, 50)
-OFFSET COALESCE(sqlc.narg('offset')::int, 0);
+-- name: UpdateIncompleteWatchHistory :one
+UPDATE watch_histories
+SET
+  position_seconds = $3,
+  is_completed = $4,
+  last_watched_at = now(),
+  updated_at = now()
+WHERE user_id = $1 AND program_id = $2 AND is_completed = FALSE
+RETURNING id, user_id, program_id, position_seconds, is_completed, last_watched_at, created_at, updated_at;
+
+-- name: InsertIncompleteWatchHistory :one
+INSERT INTO watch_histories (
+  user_id,
+  program_id,
+  position_seconds,
+  is_completed,
+  last_watched_at
+)
+VALUES ($1, $2, $3, $4, now())
+RETURNING id, user_id, program_id, position_seconds, is_completed, last_watched_at, created_at, updated_at;
+
+-- name: InsertCompletedWatchHistory :one
+INSERT INTO watch_histories (
+  user_id,
+  program_id,
+  position_seconds,
+  is_completed,
+  last_watched_at
+)
+VALUES ($1, $2, $3, TRUE, now())
+RETURNING id, user_id, program_id, position_seconds, is_completed, last_watched_at, created_at, updated_at;

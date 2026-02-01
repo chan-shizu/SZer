@@ -18,19 +18,19 @@ func NewRouter(q *db.Queries) *gin.Engine {
 	router.GET("/top", h.Top)
 	router.GET("/top/liked", h.TopLiked)
 	router.GET("/top/viewed", h.TopViewed)
-	router.GET("/programs/:id", h.ProgramDetails)
-	router.POST("/programs/:id/like", h.LikeProgram)
-	router.DELETE("/programs/:id/like", h.UnlikeProgram)
+	router.GET("/programs/:id", middleware.OptionalAuth(), h.ProgramDetails)
 	router.GET("/programs", h.ListPrograms)
-	router.POST("/watch-histories", h.UpsertWatchHistory)
-
+	
 	// マイページ系APIのみ認証必須
-	me := router.Group("/me")
-	me.Use(middleware.RequireAuth())
-	me.GET("/watching-programs", h.ListWatchingPrograms)
-	me.GET("/liked-programs", h.ListLikedPrograms)
-	me.GET("/points", h.GetPoints)
-	me.POST("/points/add", h.AddPoints)
+	authenticated := router.Group("/")
+	authenticated.Use(middleware.RequireAuth())
+	authenticated.POST("watch-histories", h.UpsertWatchHistory)
+	authenticated.POST("programs/:id/like", h.LikeProgram)
+	authenticated.DELETE("programs/:id/like", h.UnlikeProgram)
+	authenticated.GET("me/watching-programs", h.ListWatchingPrograms)
+	authenticated.GET("me/liked-programs", h.ListLikedPrograms)
+	authenticated.GET("me/points", h.GetPoints)
+	authenticated.POST("me/points/add", h.AddPoints)
 
 	return router
 }

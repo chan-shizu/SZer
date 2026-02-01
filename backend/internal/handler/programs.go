@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -28,11 +29,8 @@ func New(programs *usecase.ProgramsUsecase, users *usecase.UsersUsecase) *Handle
 }
 
 func (h *Handler) ProgramDetails(c *gin.Context) {
-	userID, err := middleware.UserIDFromContext(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
-	}
+	// ログインしていない場合はuserIDを空文字にする
+	userID, _ := middleware.UserIDFromContext(c)
 
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
@@ -48,6 +46,13 @@ func (h *Handler) ProgramDetails(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get program"})
+		return
+	}
+
+	// 視聴回数インクリメント
+	err = h.programs.IncrementViewCount(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to increment view count"})
 		return
 	}
 
@@ -118,7 +123,7 @@ func (h *Handler) UnlikeProgram(c *gin.Context) {
 
 func (h *Handler) UpsertWatchHistory(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
-	if err != nil {
+	if err != nil || userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
@@ -142,10 +147,10 @@ func (h *Handler) UpsertWatchHistory(c *gin.Context) {
 
 	wh, err := h.programs.UpsertWatchHistory(c.Request.Context(), userID, req.ProgramID, req.PositionSeconds, req.IsCompleted)
 	if err != nil {
+		log.Printf("failed to upsert watch history for user %s program %d: %v", userID, req.ProgramID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to upsert watch history"})
 		return
 	}
-
 	c.JSON(http.StatusOK, gin.H{"watch_history": wh})
 }
 

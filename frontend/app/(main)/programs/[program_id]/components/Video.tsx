@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { upsertWatchHistory, upsertWatchHistoryBeacon } from "@/lib/api/watch_histories";
+import { authClient } from "@/lib/auth/auth-client";
 
 type Props = {
   programId: number;
@@ -57,11 +58,20 @@ export const Video = ({ programId, videoUrl, startPositionSeconds }: Props) => {
       }
     };
 
-    const send = (isCompleted: boolean) => {
+    const send = async (isCompleted: boolean) => {
       if (sentRef.current) return;
       const positionSeconds = Math.floor(video.currentTime || 0);
       if (positionSeconds < 1.0 && !isCompleted) {
         // do not send very beginning position to reduce API calls
+        return;
+      }
+
+      // postgresのconflictが発生するため、開始位置と同じ位置かつ未完了の場合は送信しない
+      if (positionSeconds == startPositionSeconds) return;
+
+      const { data: session } = await authClient.getSession();
+      if (!session?.user) {
+        // not logged in
         return;
       }
 

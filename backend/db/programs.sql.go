@@ -32,14 +32,24 @@ type CreateProgramParams struct {
 	Description   sql.NullString `json:"description"`
 }
 
-func (q *Queries) CreateProgram(ctx context.Context, arg CreateProgramParams) (Program, error) {
+type CreateProgramRow struct {
+	ID            int64          `json:"id"`
+	Title         string         `json:"title"`
+	VideoPath     string         `json:"video_path"`
+	ThumbnailPath sql.NullString `json:"thumbnail_path"`
+	Description   sql.NullString `json:"description"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+}
+
+func (q *Queries) CreateProgram(ctx context.Context, arg CreateProgramParams) (CreateProgramRow, error) {
 	row := q.db.QueryRowContext(ctx, createProgram,
 		arg.Title,
 		arg.VideoPath,
 		arg.ThumbnailPath,
 		arg.Description,
 	)
-	var i Program
+	var i CreateProgramRow
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
@@ -74,7 +84,7 @@ SELECT
   p.video_path,
   p.thumbnail_path,
   p.description,
-  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   p.created_at AS program_created_at,
   p.updated_at AS program_updated_at,
   COALESCE(
@@ -96,11 +106,6 @@ SELECT
     '[]'::jsonb
   ) AS performers
 FROM programs p
-LEFT JOIN (
-  SELECT program_id, COUNT(*)::bigint AS view_count
-  FROM watch_histories
-  GROUP BY program_id
-) wc ON wc.program_id = p.id
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 LEFT JOIN program_performers pp ON p.id = pp.program_id
@@ -112,7 +117,7 @@ GROUP BY
   p.video_path,
   p.thumbnail_path,
   p.description,
-  wc.view_count,
+  p.view_count,
   p.created_at,
   p.updated_at
 `
@@ -123,13 +128,14 @@ type GetProgramByIDRow struct {
 	VideoPath        string         `json:"video_path"`
 	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
 	Description      sql.NullString `json:"description"`
-	ViewCount        int64          `json:"view_count"`
+	ViewCount        int32          `json:"view_count"`
 	ProgramCreatedAt time.Time      `json:"program_created_at"`
 	ProgramUpdatedAt time.Time      `json:"program_updated_at"`
 	CategoryTags     interface{}    `json:"category_tags"`
 	Performers       interface{}    `json:"performers"`
 }
 
+// 視聴回数はprogramsテーブルのview_countを参照
 func (q *Queries) GetProgramByID(ctx context.Context, id int64) (GetProgramByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getProgramByID, id)
 	var i GetProgramByIDRow
@@ -155,7 +161,7 @@ SELECT
   p.video_path,
   p.thumbnail_path,
   p.description,
-  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   EXISTS(
     SELECT 1
@@ -183,11 +189,6 @@ SELECT
     '[]'::jsonb
   ) AS performers
 FROM programs p
-LEFT JOIN (
-  SELECT program_id, COUNT(*)::bigint AS view_count
-  FROM watch_histories
-  GROUP BY program_id
-) wc ON wc.program_id = p.id
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 LEFT JOIN program_performers pp ON p.id = pp.program_id
@@ -199,7 +200,7 @@ GROUP BY
   p.video_path,
   p.thumbnail_path,
   p.description,
-  wc.view_count,
+  p.view_count,
   p.created_at,
   p.updated_at
 `
@@ -215,7 +216,7 @@ type GetProgramDetailsByIDRow struct {
 	VideoPath        string         `json:"video_path"`
 	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
 	Description      sql.NullString `json:"description"`
-	ViewCount        int64          `json:"view_count"`
+	ViewCount        int32          `json:"view_count"`
 	LikeCount        int64          `json:"like_count"`
 	Liked            bool           `json:"liked"`
 	ProgramCreatedAt time.Time      `json:"program_created_at"`
@@ -224,6 +225,7 @@ type GetProgramDetailsByIDRow struct {
 	Performers       interface{}    `json:"performers"`
 }
 
+// 視聴回数はprogramsテーブルのview_countを参照
 func (q *Queries) GetProgramDetailsByID(ctx context.Context, arg GetProgramDetailsByIDParams) (GetProgramDetailsByIDRow, error) {
 	row := q.db.QueryRowContext(ctx, getProgramDetailsByID, arg.ID, arg.UserID)
 	var i GetProgramDetailsByIDRow
@@ -249,7 +251,7 @@ SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
@@ -259,11 +261,6 @@ SELECT
     '[]'::jsonb
   ) AS category_tags
 FROM programs p
-LEFT JOIN (
-  SELECT program_id, COUNT(*)::bigint AS view_count
-  FROM watch_histories
-  GROUP BY program_id
-) wc ON wc.program_id = p.id
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 WHERE
@@ -282,7 +279,7 @@ GROUP BY
   p.id,
   p.title,
   p.thumbnail_path,
-  wc.view_count
+  p.view_count
 `
 
 type GetProgramsParams struct {
@@ -294,11 +291,12 @@ type GetProgramsRow struct {
 	ProgramID     int64          `json:"program_id"`
 	Title         string         `json:"title"`
 	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int64          `json:"view_count"`
+	ViewCount     int32          `json:"view_count"`
 	LikeCount     int64          `json:"like_count"`
 	CategoryTags  interface{}    `json:"category_tags"`
 }
 
+// 視聴回数はprogramsテーブルのview_countを参照
 func (q *Queries) GetPrograms(ctx context.Context, arg GetProgramsParams) ([]GetProgramsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getPrograms, arg.Title, pq.Array(arg.TagIds))
 	if err != nil {
@@ -355,24 +353,15 @@ selected AS (
   SELECT program_id, like_count FROM top_likes
   UNION ALL
   SELECT program_id, like_count FROM fallback
-),
-view_counts AS (
-  SELECT
-    wh.program_id,
-    COUNT(*)::bigint AS view_count
-  FROM watch_histories wh
-  WHERE wh.program_id IN (SELECT program_id FROM selected)
-  GROUP BY wh.program_id
 )
 SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  COALESCE(vc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   s.like_count
 FROM selected s
 JOIN programs p ON p.id = s.program_id
-LEFT JOIN view_counts vc ON vc.program_id = p.id
 ORDER BY s.like_count DESC, p.created_at DESC
 `
 
@@ -380,7 +369,7 @@ type GetTopLikedProgramsRow struct {
 	ProgramID     int64          `json:"program_id"`
 	Title         string         `json:"title"`
 	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int64          `json:"view_count"`
+	ViewCount     int32          `json:"view_count"`
 	LikeCount     int64          `json:"like_count"`
 }
 
@@ -418,14 +407,9 @@ SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count
 FROM programs p
-LEFT JOIN (
-  SELECT program_id, COUNT(*)::bigint AS view_count
-  FROM watch_histories
-  GROUP BY program_id
-) wc ON wc.program_id = p.id
 ORDER BY p.created_at DESC
 LIMIT 7
 `
@@ -434,10 +418,11 @@ type GetTopProgramsRow struct {
 	ProgramID     int64          `json:"program_id"`
 	Title         string         `json:"title"`
 	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int64          `json:"view_count"`
+	ViewCount     int32          `json:"view_count"`
 	LikeCount     int64          `json:"like_count"`
 }
 
+// 視聴回数はprogramsテーブルのview_countを参照
 func (q *Queries) GetTopPrograms(ctx context.Context) ([]GetTopProgramsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getTopPrograms)
 	if err != nil {
@@ -468,40 +453,30 @@ func (q *Queries) GetTopPrograms(ctx context.Context) ([]GetTopProgramsRow, erro
 }
 
 const getTopViewedPrograms = `-- name: GetTopViewedPrograms :many
-WITH top_view_counts AS (
-  SELECT
-    wh.program_id,
-    COUNT(*)::bigint AS view_count
-  FROM watch_histories wh
-  GROUP BY wh.program_id
-  ORDER BY view_count DESC
-  LIMIT COALESCE($1::int, 7)
-),
-likes_count AS (
+WITH likes_count AS (
   SELECT
     l.program_id,
     COUNT(*)::bigint AS like_count
   FROM likes l
-  WHERE l.program_id IN (SELECT program_id FROM top_view_counts)
   GROUP BY l.program_id
 )
 SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  tvc.view_count,
+  p.view_count,
   COALESCE(lc.like_count, 0)::bigint AS like_count
-FROM top_view_counts tvc
-JOIN programs p ON p.id = tvc.program_id
+FROM programs p
 LEFT JOIN likes_count lc ON lc.program_id = p.id
-ORDER BY tvc.view_count DESC, p.created_at DESC
+ORDER BY p.view_count DESC, p.created_at DESC
+LIMIT COALESCE($1::int, 7)
 `
 
 type GetTopViewedProgramsRow struct {
 	ProgramID     int64          `json:"program_id"`
 	Title         string         `json:"title"`
 	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int64          `json:"view_count"`
+	ViewCount     int32          `json:"view_count"`
 	LikeCount     int64          `json:"like_count"`
 }
 
@@ -532,4 +507,15 @@ func (q *Queries) GetTopViewedPrograms(ctx context.Context, limit sql.NullInt32)
 		return nil, err
 	}
 	return items, nil
+}
+
+const incrementProgramViewCount = `-- name: IncrementProgramViewCount :exec
+UPDATE programs
+SET view_count = view_count + 1
+WHERE id = $1
+`
+
+func (q *Queries) IncrementProgramViewCount(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, incrementProgramViewCount, id)
+	return err
 }

@@ -16,7 +16,7 @@ SELECT
   p.video_path,
   p.thumbnail_path,
   p.description,
-  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   p.created_at AS program_created_at,
   p.updated_at AS program_updated_at,
   COALESCE(
@@ -38,11 +38,7 @@ SELECT
     '[]'::jsonb
   ) AS performers
 FROM programs p
-LEFT JOIN (
-  SELECT program_id, COUNT(*)::bigint AS view_count
-  FROM watch_histories
-  GROUP BY program_id
-) wc ON wc.program_id = p.id
+-- 視聴回数はprogramsテーブルのview_countを参照
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 LEFT JOIN program_performers pp ON p.id = pp.program_id
@@ -54,7 +50,7 @@ GROUP BY
   p.video_path,
   p.thumbnail_path,
   p.description,
-  wc.view_count,
+  p.view_count,
   p.created_at,
   p.updated_at;
 
@@ -65,7 +61,7 @@ SELECT
   p.video_path,
   p.thumbnail_path,
   p.description,
-  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   EXISTS(
     SELECT 1
@@ -93,11 +89,7 @@ SELECT
     '[]'::jsonb
   ) AS performers
 FROM programs p
-LEFT JOIN (
-  SELECT program_id, COUNT(*)::bigint AS view_count
-  FROM watch_histories
-  GROUP BY program_id
-) wc ON wc.program_id = p.id
+-- 視聴回数はprogramsテーブルのview_countを参照
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 LEFT JOIN program_performers pp ON p.id = pp.program_id
@@ -109,7 +101,7 @@ GROUP BY
   p.video_path,
   p.thumbnail_path,
   p.description,
-  wc.view_count,
+  p.view_count,
   p.created_at,
   p.updated_at;
 
@@ -118,7 +110,7 @@ SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
@@ -128,11 +120,7 @@ SELECT
     '[]'::jsonb
   ) AS category_tags
 FROM programs p
-LEFT JOIN (
-  SELECT program_id, COUNT(*)::bigint AS view_count
-  FROM watch_histories
-  GROUP BY program_id
-) wc ON wc.program_id = p.id
+-- 視聴回数はprogramsテーブルのview_countを参照
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 WHERE
@@ -151,21 +139,17 @@ GROUP BY
   p.id,
   p.title,
   p.thumbnail_path,
-  wc.view_count;
+  p.view_count;
 
 -- name: GetTopPrograms :many
 SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  COALESCE(wc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count
 FROM programs p
-LEFT JOIN (
-  SELECT program_id, COUNT(*)::bigint AS view_count
-  FROM watch_histories
-  GROUP BY program_id
-) wc ON wc.program_id = p.id
+-- 視聴回数はprogramsテーブルのview_countを参照
 ORDER BY p.created_at DESC
 LIMIT 7;
 
@@ -195,54 +179,35 @@ selected AS (
   SELECT program_id, like_count FROM top_likes
   UNION ALL
   SELECT program_id, like_count FROM fallback
-),
-view_counts AS (
-  SELECT
-    wh.program_id,
-    COUNT(*)::bigint AS view_count
-  FROM watch_histories wh
-  WHERE wh.program_id IN (SELECT program_id FROM selected)
-  GROUP BY wh.program_id
 )
 SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  COALESCE(vc.view_count, 0)::bigint AS view_count,
+  p.view_count,
   s.like_count
 FROM selected s
 JOIN programs p ON p.id = s.program_id
-LEFT JOIN view_counts vc ON vc.program_id = p.id
 ORDER BY s.like_count DESC, p.created_at DESC;
 
 -- name: GetTopViewedPrograms :many
-WITH top_view_counts AS (
-  SELECT
-    wh.program_id,
-    COUNT(*)::bigint AS view_count
-  FROM watch_histories wh
-  GROUP BY wh.program_id
-  ORDER BY view_count DESC
-  LIMIT COALESCE(sqlc.narg('limit')::int, 7)
-),
-likes_count AS (
+WITH likes_count AS (
   SELECT
     l.program_id,
     COUNT(*)::bigint AS like_count
   FROM likes l
-  WHERE l.program_id IN (SELECT program_id FROM top_view_counts)
   GROUP BY l.program_id
 )
 SELECT
   p.id AS program_id,
   p.title,
   p.thumbnail_path,
-  tvc.view_count,
+  p.view_count,
   COALESCE(lc.like_count, 0)::bigint AS like_count
-FROM top_view_counts tvc
-JOIN programs p ON p.id = tvc.program_id
+FROM programs p
 LEFT JOIN likes_count lc ON lc.program_id = p.id
-ORDER BY tvc.view_count DESC, p.created_at DESC;
+ORDER BY p.view_count DESC, p.created_at DESC
+LIMIT COALESCE(sqlc.narg('limit')::int, 7);
 
 -- name: ExistsProgram :one
 SELECT EXISTS(
@@ -250,3 +215,9 @@ SELECT EXISTS(
   FROM programs
   WHERE id = $1
 ) AS exists;
+
+
+-- name: IncrementProgramViewCount :exec
+UPDATE programs
+SET view_count = view_count + 1
+WHERE id = $1;

@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS programs (
 	thumbnail_path TEXT,
 	description TEXT,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  view_count integer NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS category_tags (

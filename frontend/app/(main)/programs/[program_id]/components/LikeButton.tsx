@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { authClient } from "@/lib/auth/auth-client";
+import { AuthModal } from "@/components/AuthModal";
 import { ThumbsUp } from "lucide-react";
 
 import { likeProgram, unlikeProgram } from "@/lib/api/likes";
@@ -16,10 +18,19 @@ export function LikeButton({ programId, initialLiked, initialLikeCount }: Props)
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [modalOpen, setModalOpen] = useState(false);
+
   async function onClick() {
     if (isSaving) return;
-    setIsSaving(true);
 
+    // ログインチェック
+    const { data: session } = await authClient.getSession();
+    if (!session?.user) {
+      setModalOpen(true);
+      return;
+    }
+
+    setIsSaving(true);
     try {
       const res = liked ? await unlikeProgram(programId) : await likeProgram(programId);
       setLiked(res.liked);
@@ -32,17 +43,19 @@ export function LikeButton({ programId, initialLiked, initialLikeCount }: Props)
   }
 
   return (
-    <div className="flex items-center gap-x-3">
+    <div>
       <button
         type="button"
         onClick={onClick}
         disabled={isSaving}
         aria-label={liked ? "いいね解除" : "いいね"}
-        className="disabled:opacity-50"
+        className="disabled:opacity-50 flex items-center gap-x-3"
       >
         <ThumbsUp className={liked ? "h-5 w-5 fill-current text-gray-900" : "h-5 w-5 text-gray-900"} strokeWidth={2} />
+        <div className="text-sm text-gray-600">いいね数: {likeCount}</div>
       </button>
-      <div className="text-sm text-gray-600">いいね数: {likeCount}</div>
+
+      <AuthModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
 }

@@ -18,10 +18,10 @@ const userIDContextKey = "user_id"
 type getSessionResponse struct {
 	User *struct {
 		ID string `json:"id"`
-	} `json:"user"`
-}
-
-func frontendBaseURL() string {
+		} `json:"user"`
+	}
+	
+	func frontendBaseURL() string {
 	// In docker-compose, backend can reach frontend via http://frontend:3000
 	if v := os.Getenv("BETTER_AUTH_URL"); v != "" {
 		return strings.TrimRight(v, "/")
@@ -97,4 +97,31 @@ func UserIDFromContext(c *gin.Context) (string, error) {
 		return "", errors.New("user_id invalid")
 	}
 	return s, nil
+}
+
+// 任意認証: クッキーがあればuserIDをContextにセット、なければ何もしない
+func OptionalAuth() gin.HandlerFunc {
+	client := &http.Client{Timeout: 5 * time.Second}
+	return func(c *gin.Context) {
+		cookie := c.GetHeader("Cookie")
+		if strings.TrimSpace(cookie) == "" {
+			c.Next()
+			return
+		}
+		req, _ := http.NewRequestWithContext(c.Request.Context(), http.MethodGet, frontendBaseURL()+"/api/auth/get-session", nil)
+		req.Header.Set("Cookie", cookie)
+		req.Header.Set("Accept", "application/json")
+		res, err := client.Do(req)
+		if err != nil || res.StatusCode != http.StatusOK {
+			c.Next()
+			return
+		}
+		defer res.Body.Close()
+		body, _ := io.ReadAll(res.Body)
+		var parsed getSessionResponse
+		if err := json.Unmarshal(body, &parsed); err == nil && parsed.User != nil && parsed.User.ID != "" {
+			c.Set(userIDContextKey, parsed.User.ID)
+		}
+		c.Next()
+	}
 }

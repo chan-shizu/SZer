@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/chan-shizu/SZer/internal/middleware"
@@ -16,30 +17,35 @@ type addPointsRequest struct {
 func (h *Handler) AddPoints(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
+ 		log.Printf("[AddPoints] 認証失敗: userID取得できず err=%v", err)
+ 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+ 		return
 	}
 
 	var req addPointsRequest
 	dec := json.NewDecoder(c.Request.Body)
 	dec.DisallowUnknownFields()
 	if err := dec.Decode(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
-		return
+ 		log.Printf("[AddPoints] 不正リクエスト: bodyデコード失敗 userID=%s, err=%v", userID, err)
+ 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid body"})
+ 		return
 	}
 
 	points, err := h.users.AddPoints(c.Request.Context(), userID, req.Amount)
 	if err != nil {
-		if err == usecase.ErrUserNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-			return
-		}
-		if err == usecase.ErrInvalidPointsAmount {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid amount"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add points"})
-		return
+ 		if err == usecase.ErrUserNotFound {
+ 			log.Printf("[AddPoints] データ未発見: user not found userID=%s", userID)
+ 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+ 			return
+ 		}
+ 		if err == usecase.ErrInvalidPointsAmount {
+ 			log.Printf("[AddPoints] 不正リクエスト: ポイント不正 userID=%s, amount=%d", userID, req.Amount)
+ 			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid amount"})
+ 			return
+ 		}
+ 		log.Printf("[AddPoints] サーバーエラー: ポイント追加失敗 userID=%s, amount=%d, err=%v", userID, req.Amount, err)
+ 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add points"})
+ 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"points": points})
@@ -48,18 +54,21 @@ func (h *Handler) AddPoints(c *gin.Context) {
 func (h *Handler) GetPoints(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return
+ 		log.Printf("[GetPoints] 認証失敗: userID取得できず err=%v", err)
+ 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+ 		return
 	}
 
 	points, err := h.users.GetPoints(c.Request.Context(), userID)
 	if err != nil {
-		if err == usecase.ErrUserNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get points"})
-		return
+ 		if err == usecase.ErrUserNotFound {
+ 			log.Printf("[GetPoints] データ未発見: user not found userID=%s", userID)
+ 			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+ 			return
+ 		}
+ 		log.Printf("[GetPoints] サーバーエラー: ポイント取得失敗 userID=%s, err=%v", userID, err)
+ 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get points"})
+ 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"points": points})

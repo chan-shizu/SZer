@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -87,9 +88,11 @@ func (u *ProgramsUsecase) UpsertWatchHistory(ctx context.Context, userID string,
 		UserID:    userID,
 		ProgramID: programID,
 	})
+	log.Printf("[UpsertWatchHistory] userID=%s programID=%d positionSeconds=%d isCompleted=%v", userID, programID, positionSeconds, isCompleted)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// 未完了履歴がなければINSERT
+			log.Printf("[UpsertWatchHistory] 未完了履歴なし→INSERT")
 			return u.q.InsertIncompleteWatchHistory(ctx, db.InsertIncompleteWatchHistoryParams{
 				UserID:          userID,
 				ProgramID:       programID,
@@ -97,15 +100,24 @@ func (u *ProgramsUsecase) UpsertWatchHistory(ctx context.Context, userID string,
 				IsCompleted:     isCompleted,
 			})
 		}
+		log.Printf("[UpsertWatchHistory] 未完了履歴取得失敗: %v", err)
 		return db.WatchHistory{}, err
 	}
 	// 未完了履歴があればUPDATE
-	return u.q.UpdateIncompleteWatchHistory(ctx, db.UpdateIncompleteWatchHistoryParams{
+	res, err := u.q.UpdateIncompleteWatchHistory(ctx, db.UpdateIncompleteWatchHistoryParams{
 		UserID:          userID,
 		ProgramID:       programID,
 		PositionSeconds: positionSeconds,
 		IsCompleted:     isCompleted,
 	})
+	
+	if err != nil {
+		log.Printf("[UpsertWatchHistory] UPDATE失敗: %v", err)
+	} else {
+		log.Printf("[UpsertWatchHistory] UPDATE成功: %+v", res)
+	}
+
+	return res, err
 }
 
 func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, id int64) (ProgramDetail, error) {

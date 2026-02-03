@@ -17,6 +17,7 @@ import (
 type Handler struct {
 	programs *usecase.ProgramsUsecase
 	users    *usecase.UsersUsecase
+	paypay   *usecase.PayPayUsecase
 }
 
 type upsertWatchHistoryRequest struct {
@@ -25,8 +26,8 @@ type upsertWatchHistoryRequest struct {
 	IsCompleted     bool  `json:"is_completed"`
 }
 
-func New(programs *usecase.ProgramsUsecase, users *usecase.UsersUsecase) *Handler {
-	return &Handler{programs: programs, users: users}
+func New(programs *usecase.ProgramsUsecase, users *usecase.UsersUsecase, paypay *usecase.PayPayUsecase) *Handler {
+	return &Handler{programs: programs, users: users, paypay: paypay}
 }
 
 func (h *Handler) ProgramDetails(c *gin.Context) {

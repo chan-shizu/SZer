@@ -9,6 +9,8 @@ DROP INDEX IF EXISTS watch_histories_program_id_idx;
 DROP INDEX IF EXISTS watch_histories_user_program_incomplete_uq;
 DROP TABLE IF EXISTS watch_histories;
 
+DROP TABLE IF EXISTS paypay_topups;
+
 -- better-auth tables
 DROP INDEX IF EXISTS verification_identifier_idx;
 DROP INDEX IF EXISTS account_userId_idx;

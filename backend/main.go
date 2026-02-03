@@ -13,11 +13,10 @@ import (
 )
 
 func main() {
-	err := godotenv.Load(".env")
-	// もし err がnilではないなら、"読み込み出来ませんでした"が出力されます。
-	if err != nil {
-		fmt.Printf("読み込み出来ませんでした: %v", err)
-	} 
+	// .envファイルを読み込む（環境変数として使えるようにする）
+	if err := godotenv.Load(".env"); err != nil {
+		fmt.Printf(".env読み込み失敗: %v\n", err)
+	}
 
 	ctx := context.Background()
 	conn, err := dbconn.Open(ctx)
@@ -27,7 +26,7 @@ func main() {
 	defer conn.Close()
 
 	q := db.New(conn)
-	r := router.NewRouter(q)
+	r := router.NewRouter(conn, q)
 
 	port := os.Getenv("PORT")
 	if port == "" {

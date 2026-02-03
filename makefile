@@ -39,6 +39,13 @@ migrate-down1:
 migrate-down:
 	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(DEV_DATABASE_URL)" down
 
+## migrationがdirtyになったときの作り直し
+migrate-init:
+	$(COMPOSE) down -v
+	$(COMPOSE) up -d
+	$(MAKE) migrate-up
+	$(MAKE) seed
+
 # sqlc
 sqlc:
 	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) sqlc generate

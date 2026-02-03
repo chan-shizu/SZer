@@ -4,10 +4,9 @@ import { backendFetch } from "@/lib/api/server";
 
 export async function POST(request: NextRequest) {
   const cookie = request.headers.get("cookie");
-
   const body = await request.text();
 
-  const res = await backendFetch("/me/points/add", {
+  const res = await backendFetch("/me/paypay/checkout", {
     method: "POST",
     headers: {
       ...(cookie ? { Cookie: cookie } : {}),

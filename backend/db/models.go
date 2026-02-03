@@ -48,6 +48,19 @@ type Like struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type PaypayTopup struct {
+	ID                int64          `json:"id"`
+	UserID            string         `json:"user_id"`
+	MerchantPaymentID string         `json:"merchant_payment_id"`
+	AmountYen         int32          `json:"amount_yen"`
+	Status            string         `json:"status"`
+	PaypayCodeID      sql.NullString `json:"paypay_code_id"`
+	PaypayPaymentID   sql.NullString `json:"paypay_payment_id"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         time.Time      `json:"updated_at"`
+	CreditedAt        sql.NullTime   `json:"credited_at"`
+}
+
 type Performer struct {
 	ID            int64          `json:"id"`
 	FirstName     string         `json:"first_name"`

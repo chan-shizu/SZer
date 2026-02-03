@@ -208,7 +208,7 @@ func main() {
 		} else {
 			seedUserID = "seed-user-2"
 		}
-		if _, err := q.CreateCommentWithUserName(ctx, db.CreateCommentWithUserNameParams{ProgramID: program.ID, UserID: sql.NullString{String: seedUserID, Valid: true}, Content: "Great video!"}); err != nil {
+		if _, err := q.CreateComment(ctx, db.CreateCommentParams{ProgramID: program.ID, UserID: sql.NullString{String: seedUserID, Valid: true}, Content: "Great video!"}); err != nil {
 			log.Fatalf("failed to create comment: %v", err)
 		}
 

@@ -32,6 +32,11 @@ type getSessionResponse struct {
 	return "http://frontend:3000"
 }
 
+// FrontendBaseURL is used for building redirect URLs.
+func FrontendBaseURL() string {
+	return frontendBaseURL()
+}
+
 func RequireAuth() gin.HandlerFunc {
 	client := &http.Client{Timeout: 5 * time.Second}
 	log.Printf("[auth] RequireAuth middleware initialized")

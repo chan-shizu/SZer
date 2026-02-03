@@ -1,6 +1,8 @@
 package router
 
 import (
+	"database/sql"
+
 	"github.com/chan-shizu/SZer/db"
 	"github.com/chan-shizu/SZer/internal/handler"
 	"github.com/chan-shizu/SZer/internal/middleware"
@@ -8,11 +10,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(q *db.Queries) *gin.Engine {
+func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	router := gin.Default()
 	programsUC := usecase.NewProgramsUsecase(q)
 	usersUC := usecase.NewUsersUsecase(q)
-	h := handler.New(programsUC, usersUC)
+	paypayUC := usecase.NewPayPayUsecase(conn, q)
+
+	h := handler.New(programsUC, usersUC, paypayUC)
 	commentsHandler := handler.NewCommentsHandler(q)
 
 	// 認証不要のエンドポイント
@@ -36,6 +40,8 @@ func NewRouter(q *db.Queries) *gin.Engine {
 	authenticated.GET("me/liked-programs", h.ListLikedPrograms)
 	authenticated.GET("me/points", h.GetPoints)
 	authenticated.POST("me/points/add", h.AddPoints)
+	authenticated.POST("/me/paypay/checkout", h.PayPayCheckout)
+	authenticated.GET("/me/paypay/payments/:merchantPaymentId", h.PayPayGetPayment)
 
 	return router
 }

@@ -96,6 +96,24 @@ create index "account_userId_idx" on "account" ("userId");
 
 create index "verification_identifier_idx" on "verification" ("identifier");
 
+-- PayPay topups (user purchases points via PayPay)
+-- Must be created after better-auth "user" table exists.
+CREATE TABLE IF NOT EXISTS paypay_topups (
+  id BIGSERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  merchant_payment_id TEXT NOT NULL UNIQUE,
+  amount_yen INT NOT NULL CHECK (amount_yen > 0),
+  status TEXT NOT NULL DEFAULT 'CREATED',
+  paypay_code_id TEXT,
+  paypay_payment_id TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  credited_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS paypay_topups_user_created_at_idx
+  ON paypay_topups (user_id, created_at DESC);
+
 -- Watch histories (user x program)
 -- Must be created after better-auth "user" table exists.
 CREATE TABLE IF NOT EXISTS watch_histories (

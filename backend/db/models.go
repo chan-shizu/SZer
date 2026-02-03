@@ -33,11 +33,12 @@ type CategoryTag struct {
 }
 
 type Comment struct {
-	ID        int64     `json:"id"`
-	ProgramID int64     `json:"program_id"`
-	Content   string    `json:"content"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        int64          `json:"id"`
+	ProgramID int64          `json:"program_id"`
+	UserID    sql.NullString `json:"user_id"`
+	Content   string         `json:"content"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 }
 
 type Like struct {

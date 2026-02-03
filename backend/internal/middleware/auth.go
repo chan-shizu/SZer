@@ -116,6 +116,7 @@ func OptionalAuth() gin.HandlerFunc {
 			c.Next()
 			return
 		}
+
 		defer res.Body.Close()
 		body, _ := io.ReadAll(res.Body)
 		var parsed getSessionResponse

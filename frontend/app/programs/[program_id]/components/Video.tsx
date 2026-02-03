@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 import { upsertWatchHistory, upsertWatchHistoryBeacon } from "@/lib/api/watch_histories";
 import { authClient } from "@/lib/auth/auth-client";
@@ -15,6 +16,7 @@ export const Video = ({ programId, videoUrl, startPositionSeconds }: Props) => {
   const ref = useRef<HTMLVideoElement | null>(null);
   const sentRef = useRef(false);
   const appliedStartRef = useRef(false);
+  const router = useRouter();
 
   useEffect(() => {
     const video = ref.current;
@@ -126,8 +128,28 @@ export const Video = ({ programId, videoUrl, startPositionSeconds }: Props) => {
   }, [programId, videoUrl, startPositionSeconds]);
 
   return (
-    <video ref={ref} controls style={{ width: "100%", maxWidth: 960 }} src={videoUrl}>
-      お使いのブラウザは video タグに対応していません。
-    </video>
+    <div className="relative w-full">
+      {/* 戻るボタン 左上 */}
+      <button
+        aria-label="前の画面に戻る"
+        className="absolute top-3 left-3 z-20 bg-white/80 rounded-full p-1 hover:bg-gray-100 border border-gray-200 shadow"
+        onClick={() => router.back()}
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6 text-gray-700"
+        >
+          <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+      <video ref={ref} controls style={{ width: "100%" }} src={videoUrl}>
+        お使いのブラウザは video タグに対応していません。
+      </video>
+    </div>
   );
 };

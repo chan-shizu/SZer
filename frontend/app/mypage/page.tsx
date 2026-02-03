@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 
 import { getLikedPrograms, getWatchingPrograms } from "@/lib/api/mypage";
 import { ApiError } from "@/lib/api/error";
-import { ProgramCard } from "@/app/(main)/programs/components/ProgramCard";
+import { ProgramCard } from "@/app/programs/components/ProgramCard";
+import { BottomTabBar } from "@/components/BottomTabBar";
 
 type Tab = "watching" | "liked";
 
@@ -52,6 +53,7 @@ export default async function Page(props: { searchParams: Promise<{ tab?: string
           programs.map((program) => <ProgramCard key={program.program_id} program={program} />)
         )}
       </div>
+      <BottomTabBar />
     </div>
   );
 }

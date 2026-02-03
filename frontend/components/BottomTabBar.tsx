@@ -21,7 +21,7 @@ const tabs = [
 
 export const BottomTabBar = () => {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-muted bg-background">
+    <nav className="fixed mt-16 bottom-0 left-0 right-0 z-50 border-t border-muted bg-background">
       <div className="flex items-center justify-around">
         {tabs.map((tab) => (
           <BottomTabBarItem key={tab.href} href={tab.href} label={tab.label} icon={tab.icon} />

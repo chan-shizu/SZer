@@ -1,3 +1,4 @@
+import { BottomTabBar } from "@/components/BottomTabBar";
 import { ProgramList } from "./components/ProgramList";
 import { SearchBar } from "./components/SearchBar";
 import { Tags } from "./components/Tags";
@@ -19,6 +20,7 @@ export default async function Page(props: { searchParams: Promise<{ title?: stri
         <Tags />
       </div>
       <ProgramList title={searchParams.title} tagIds={tagIdsNumber} />
+      <BottomTabBar />
     </div>
   );
 }

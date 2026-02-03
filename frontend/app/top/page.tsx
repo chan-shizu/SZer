@@ -1,6 +1,7 @@
 import { getTopLikedPrograms, getTopPrograms, getTopViewedPrograms } from "@/lib/api/programs";
 import { TopProgramCard } from "./components/TopProgramCard";
 import LogoAndName from "./components/LogoAndName";
+import { BottomTabBar } from "@/components/BottomTabBar";
 
 export const dynamic = "force-dynamic";
 
@@ -61,6 +62,7 @@ export default async function TopPage() {
           </div>
         </section>
       </div>
+      <BottomTabBar />
     </div>
   );
 }

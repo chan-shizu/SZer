@@ -201,8 +201,14 @@ func main() {
 			}
 		}
 
-		// Add a comment
-		if _, err := q.CreateComment(ctx, db.CreateCommentParams{ProgramID: program.ID, Content: "Great video!"}); err != nil {
+		// Add a comment (user_id付き)
+		var seedUserID string
+		if i%2 == 0 {
+			seedUserID = "seed-user-1"
+		} else {
+			seedUserID = "seed-user-2"
+		}
+		if _, err := q.CreateCommentWithUserName(ctx, db.CreateCommentWithUserNameParams{ProgramID: program.ID, UserID: sql.NullString{String: seedUserID, Valid: true}, Content: "Great video!"}); err != nil {
 			log.Fatalf("failed to create comment: %v", err)
 		}
 

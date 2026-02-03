@@ -12,7 +12,7 @@ type Props = { performers: Performer[] };
 export const Performers = ({ performers }: Props) => {
   return (
     <div>
-      <h2>出演者</h2>
+      <h3 className="font-bold mb-2">出演者</h3>
       <div className="flex flex-wrap gap-2 mt-2">
         {performers.map((performer) => (
           <div

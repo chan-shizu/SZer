@@ -42,14 +42,6 @@ CREATE TABLE IF NOT EXISTS program_performers (
 	PRIMARY KEY (program_id, performer_id)
 );
 
-CREATE TABLE IF NOT EXISTS comments (
-	id BIGSERIAL PRIMARY KEY,
-	program_id BIGINT NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
-	content TEXT NOT NULL,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
 -- better-auth tables (generated via better-auth compileMigrations for Postgres)
 create table "user" (
   "id" text not null primary key,
@@ -142,3 +134,12 @@ CREATE TABLE IF NOT EXISTS likes (
 
 CREATE INDEX IF NOT EXISTS likes_program_id_idx
   ON likes (program_id);
+
+CREATE TABLE IF NOT EXISTS comments (
+  id BIGSERIAL PRIMARY KEY,
+  program_id BIGINT NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+  user_id TEXT REFERENCES "user"(id), -- ログイン時のみセット、未ログインはNULL
+  content TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

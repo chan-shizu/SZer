@@ -7,32 +7,127 @@ package db
 
 import (
 	"context"
+	"database/sql"
+	"time"
 )
 
 const createComment = `-- name: CreateComment :one
 INSERT INTO comments (
   program_id,
+  user_id,
   content
 ) VALUES (
-  $1, $2
+  $1, $2, $3
 )
-RETURNING id, program_id, content, created_at, updated_at
+RETURNING id, program_id, user_id, content, created_at, updated_at
 `
 
 type CreateCommentParams struct {
-	ProgramID int64  `json:"program_id"`
-	Content   string `json:"content"`
+	ProgramID int64          `json:"program_id"`
+	UserID    sql.NullString `json:"user_id"`
+	Content   string         `json:"content"`
 }
 
 func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error) {
-	row := q.db.QueryRowContext(ctx, createComment, arg.ProgramID, arg.Content)
+	row := q.db.QueryRowContext(ctx, createComment, arg.ProgramID, arg.UserID, arg.Content)
 	var i Comment
 	err := row.Scan(
 		&i.ID,
 		&i.ProgramID,
+		&i.UserID,
 		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const createCommentWithUserName = `-- name: CreateCommentWithUserName :one
+SELECT c.id, c.program_id, c.user_id, u.name AS user_name, c.content, c.created_at, c.updated_at
+FROM comments c
+LEFT JOIN "user" u ON c.user_id = u.id
+WHERE c.id = (
+  SELECT c2.id FROM comments c2 WHERE c2.program_id = $1 AND c2.user_id = $2 AND c2.content = $3 ORDER BY c2.created_at DESC LIMIT 1
+)
+`
+
+type CreateCommentWithUserNameParams struct {
+	ProgramID int64          `json:"program_id"`
+	UserID    sql.NullString `json:"user_id"`
+	Content   string         `json:"content"`
+}
+
+type CreateCommentWithUserNameRow struct {
+	ID        int64          `json:"id"`
+	ProgramID int64          `json:"program_id"`
+	UserID    sql.NullString `json:"user_id"`
+	UserName  sql.NullString `json:"user_name"`
+	Content   string         `json:"content"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+}
+
+// コメント作成後、user_nameも返すためのクエリ
+func (q *Queries) CreateCommentWithUserName(ctx context.Context, arg CreateCommentWithUserNameParams) (CreateCommentWithUserNameRow, error) {
+	row := q.db.QueryRowContext(ctx, createCommentWithUserName, arg.ProgramID, arg.UserID, arg.Content)
+	var i CreateCommentWithUserNameRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProgramID,
+		&i.UserID,
+		&i.UserName,
+		&i.Content,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const listCommentsByProgramID = `-- name: ListCommentsByProgramID :many
+SELECT c.id, c.program_id, c.user_id, u.name AS user_name, c.content, c.created_at, c.updated_at
+FROM comments c
+LEFT JOIN "user" u ON c.user_id = u.id
+WHERE c.program_id = $1
+ORDER BY c.created_at DESC
+`
+
+type ListCommentsByProgramIDRow struct {
+	ID        int64          `json:"id"`
+	ProgramID int64          `json:"program_id"`
+	UserID    sql.NullString `json:"user_id"`
+	UserName  sql.NullString `json:"user_name"`
+	Content   string         `json:"content"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+}
+
+func (q *Queries) ListCommentsByProgramID(ctx context.Context, programID int64) ([]ListCommentsByProgramIDRow, error) {
+	rows, err := q.db.QueryContext(ctx, listCommentsByProgramID, programID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCommentsByProgramIDRow
+	for rows.Next() {
+		var i ListCommentsByProgramIDRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProgramID,
+			&i.UserID,
+			&i.UserName,
+			&i.Content,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

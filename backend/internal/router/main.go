@@ -13,6 +13,7 @@ func NewRouter(q *db.Queries) *gin.Engine {
 	programsUC := usecase.NewProgramsUsecase(q)
 	usersUC := usecase.NewUsersUsecase(q)
 	h := handler.New(programsUC, usersUC)
+	commentsHandler := handler.NewCommentsHandler(q)
 
 	// 認証不要のエンドポイント
 	router.GET("/top", h.Top)
@@ -20,6 +21,10 @@ func NewRouter(q *db.Queries) *gin.Engine {
 	router.GET("/top/viewed", h.TopViewed)
 	router.GET("/programs/:id", middleware.OptionalAuth(), h.ProgramDetails)
 	router.GET("/programs", h.ListPrograms)
+	
+	// コメントAPI（未ログインOK）
+	router.GET("/programs/:id/comments", middleware.OptionalAuth(), commentsHandler.ListComments)
+	router.POST("/programs/:id/comments", middleware.OptionalAuth(), commentsHandler.PostComment)
 	
 	// マイページ系APIのみ認証必須
 	authenticated := router.Group("/")

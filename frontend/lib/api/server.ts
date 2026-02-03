@@ -35,6 +35,7 @@ export async function backendFetch(path: string, init: RequestInit = {}): Promis
     try {
       const reqHeaders = await nextHeaders();
       const cookie = reqHeaders.get("cookie");
+
       if (cookie) {
         headers.set("Cookie", cookie);
       }

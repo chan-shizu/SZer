@@ -1,6 +1,19 @@
 version: "3.8"
 
 services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: szer_postgres_test
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_pass
+      POSTGRES_DB: test_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user"]
   postgres:
     image: postgres:16-alpine
     container_name: szer_postgres
@@ -40,6 +53,7 @@ services:
     container_name: szer_backend
     ports:
       - "8080:8080"
+      - "2345:2345"
     environment:
       PORT: 8080
       ENV: development
@@ -57,7 +71,19 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ["/go/bin/air", "-c", ".air.toml"]
+    command:
+      [
+        "/go/bin/dlv",
+        "--listen=:2345",
+        "--headless",
+        "--api-version=2",
+        "--accept-multiclient",
+        "exec",
+        "/go/bin/air",
+        "--",
+        "-c",
+        ".air.toml",
+      ]
 
   frontend:
     build:
@@ -93,6 +119,7 @@ services:
 
 volumes:
   postgres_data:
+  postgres_test_data:
     driver: local
   minio_data:
     driver: local

@@ -18,13 +18,18 @@ func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 
 	h := handler.New(programsUC, usersUC, paypayUC)
 	commentsHandler := handler.NewCommentsHandler(q)
+	paypayWebhookHandler := handler.NewPayPayWebhookHandler(conn, q)
 
+	
 	// 認証不要のエンドポイント
 	router.GET("/top", h.Top)
 	router.GET("/top/liked", h.TopLiked)
 	router.GET("/top/viewed", h.TopViewed)
 	router.GET("/programs/:id", middleware.OptionalAuth(), h.ProgramDetails)
 	router.GET("/programs", h.ListPrograms)
+	
+	// PayPay Webhook（認証不要）
+	router.POST("/api/paypay/webhook", paypayWebhookHandler.Handle)
 	
 	// コメントAPI（未ログインOK）
 	router.GET("/programs/:id/comments", middleware.OptionalAuth(), commentsHandler.ListComments)

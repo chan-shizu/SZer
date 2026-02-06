@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
-	"database/sql"
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
@@ -16,18 +15,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func setupTestDB(t *testing.T) (*sql.DB, *db.Queries) {
-	// dsn := os.Getenv("TEST_DATABASE_URL")
-	dsn := "postgres://test_user:test_pass@postgres-test:5432/test_db?sslmode=disable"
-	if dsn == "" {
-		t.Fatal("TEST_DATABASE_URL must be set for integration tests")
-	}
-	dbConn, err := sql.Open("postgres", dsn)
-	if err != nil {
-		t.Fatalf("failed to open test db: %v", err)
-	}
-	return dbConn, db.New(dbConn)
-}
 
 func TestPayPayWebhookHandler_Integration(t *testing.T) {
 

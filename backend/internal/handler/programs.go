@@ -26,7 +26,7 @@ type upsertWatchHistoryRequest struct {
 	IsCompleted     bool  `json:"is_completed"`
 }
 
-func New(programs *usecase.ProgramsUsecase, users *usecase.UsersUsecase, paypay *usecase.PayPayUsecase) *Handler {
+func NewHandler(programs *usecase.ProgramsUsecase, users *usecase.UsersUsecase, paypay *usecase.PayPayUsecase) *Handler {
 	return &Handler{programs: programs, users: users, paypay: paypay}
 }
 

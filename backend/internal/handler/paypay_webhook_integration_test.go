@@ -30,7 +30,7 @@ func TestPayPayWebhookHandler_Integration(t *testing.T) {
 	}
 	
 	// テスト用topupをinsert
-	_, err = dbConn.Exec(`INSERT INTO paypay_topups (user_id, merchant_payment_id, amount_yen, status, created_at, updated_at) VALUES ($1, $2, $3, $4, now(), now()) ON CONFLICT (merchant_payment_id) DO NOTHING`, "integration-user-id", "integration-merchant-id", 200, "CREATED")
+	_, err = dbConn.Exec(`INSERT INTO paypay_topups (user_id, merchant_payment_id, amount_yen, status, created_at, updated_at) VALUES ($1, $2, $3, $4, now(), now()) ON CONFLICT (merchant_payment_id) DO NOTHING`, "integration-user-id", "integration-merchant-id", 100, "CREATED")
 	if err != nil {
 		t.Fatalf("failed to insert test topup: %v", err)
 	}
@@ -39,7 +39,7 @@ func TestPayPayWebhookHandler_Integration(t *testing.T) {
 	r := gin.New()
 	r.POST("/api/paypay/webhook", handler.Handle)
 	
-	body := `{"merchantPaymentId":"integration-merchant-id","userId":"integration-user-id","paymentId":"integration-payment-id","status":"COMPLETED","amount":{"amount":300,"currency":"JPY"}}`
+	body := `{"merchantPaymentId":"integration-merchant-id","userId":"integration-user-id","paymentId":"integration-payment-id","status":"COMPLETED","amount":{"amount":100,"currency":"JPY"}}`
 	mac := hmac.New(sha256.New, []byte("testsecret"))
 	mac.Write([]byte(body))
 	signature := base64.StdEncoding.EncodeToString(mac.Sum(nil))

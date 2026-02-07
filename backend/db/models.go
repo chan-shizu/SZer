@@ -72,6 +72,13 @@ type Performer struct {
 	UpdatedAt     time.Time      `json:"updated_at"`
 }
 
+type PermittedProgramUser struct {
+	ID        int64     `json:"id"`
+	UserID    string    `json:"user_id"`
+	ProgramID int64     `json:"program_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Program struct {
 	ID               int64          `json:"id"`
 	Title            string         `json:"title"`

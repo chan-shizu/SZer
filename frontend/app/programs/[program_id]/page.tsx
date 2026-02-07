@@ -1,5 +1,6 @@
 import { getProgramDetail } from "@/lib/api/programs";
 import { Video } from "./components/Video";
+import { LockedVideo } from "./components/LockedVideo";
 import { Title } from "./components/Title";
 import { Description } from "./components/Description";
 import { CategoryTags } from "./components/Tags";
@@ -16,16 +17,21 @@ export default async function Page({ params }: Props) {
   }
   const programDetail = await getProgramDetail(program_id);
   const programIdNumber = Number(programDetail.program.program_id);
+  const isPermitted = programDetail.is_permitted;
 
   return (
     <div className="flex flex-col h-screen">
       {/* 動画は常に上部に固定表示 */}
       <div className="shrink-0">
-        <Video
-          programId={programIdNumber}
-          videoUrl={programDetail.program.video_url}
-          startPositionSeconds={programDetail.program.watch_history?.position_seconds ?? undefined}
-        />
+        {isPermitted ? (
+          <Video
+            programId={programIdNumber}
+            videoUrl={programDetail.program.video_url}
+            startPositionSeconds={programDetail.program.watch_history?.position_seconds ?? undefined}
+          />
+        ) : (
+          <LockedVideo thumbnailUrl={programDetail.program.thumbnail_url} title={programDetail.program.title} />
+        )}
       </div>
       {/* 下部だけスクロール可能 */}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 grid gap-y-4 bg-white">

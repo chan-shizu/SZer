@@ -36,6 +36,7 @@ export type ProgramDetails = {
 
 export type GetProgramDetailResponse = {
   program: ProgramDetails;
+  is_permitted: boolean;
 };
 
 export type ProgramListItem = {

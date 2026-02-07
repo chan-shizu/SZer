@@ -8,6 +8,9 @@ BACKEND_SERVICE ?= backend
 # dev DB URL (from memo.md)
 DEV_DATABASE_URL ?= postgres://dev_user:dev_password@postgres:5432/szer_dev?sslmode=disable
 
+# test DB URL
+TEST_DATABASE_URL ?= postgres://test_user:test_pass@postgres-test:5432/test_db?sslmode=disable
+
 # migrate runs inside the backend container. WORKDIR is /app, so db/migrations is valid.
 MIGRATIONS_PATH ?= db/migrations
 
@@ -29,15 +32,19 @@ help:
 # migrate
 migrate-up:
 	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(DEV_DATABASE_URL)" up
+	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(TEST_DATABASE_URL)" up
 
 migrate-up1:
 	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(DEV_DATABASE_URL)" up 1
+	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(TEST_DATABASE_URL)" up 1
 
 migrate-down1:
 	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(DEV_DATABASE_URL)" down 1
+	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(TEST_DATABASE_URL)" down 1
 
 migrate-down:
 	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(DEV_DATABASE_URL)" down
+	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) migrate -path $(MIGRATIONS_PATH) -database "$(TEST_DATABASE_URL)" down
 
 ## migrationがdirtyになったときの作り直し
 migrate-init:
@@ -53,3 +60,7 @@ sqlc:
 # cmd
 seed:
 	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) go run ./cmd/seed/main.go
+
+# test
+test:
+	$(COMPOSE) exec $(DOCKER_EXEC_FLAGS) $(BACKEND_SERVICE) go test ./... -v -count=1

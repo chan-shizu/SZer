@@ -415,6 +415,17 @@ func (u *ProgramsUsecase) IncrementViewCount(ctx context.Context, programID int6
 	return u.q.IncrementProgramViewCount(ctx, programID)
 }
 
+// 限定公開動画の閲覧権限チェック
+func (u *ProgramsUsecase) IsUserPermittedForProgram(ctx context.Context, userID string, programID int64) (bool, error) {
+	if userID == "" {
+		return false, nil
+	}
+	return u.q.IsUserPermittedForProgram(ctx, db.IsUserPermittedForProgramParams{
+		UserID:    userID,
+		ProgramID: programID,
+	})
+}
+
 // private functions
 
 func buildVideoURL(videoPath string) string {

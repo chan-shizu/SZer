@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,37 +9,12 @@ import (
 
 	"github.com/chan-shizu/SZer/internal/usecase"
 	"github.com/gin-gonic/gin"
-	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
-
-// cleanupProgramDetailsTestData はテストデータを削除する
-func cleanupProgramDetailsTestData(t *testing.T, dbConn *sql.DB) {
-	// 外部キー制約の順序に従って削除
-	tables := []string{
-		"program_category_tags",
-		"program_performers",
-		"likes",
-		"watch_histories",
-		"programs",
-		"category_tags",
-		"performers",
-	}
-	for _, table := range tables {
-		_, err := dbConn.Exec(fmt.Sprintf("DELETE FROM %s", table))
-		if err != nil {
-			t.Logf("cleanup warning: failed to delete from %s: %v", table, err)
-		}
-	}
-}
 
 func TestProgramDetails_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dbConn, q := setupTestDB(t)
-
-	// テストデータをクリーンアップ
-	cleanupProgramDetailsTestData(t, dbConn)
-	t.Cleanup(func() { cleanupProgramDetailsTestData(t, dbConn) })
 
 	// テスト用データinsert
 	var programID int64
@@ -56,7 +30,8 @@ func TestProgramDetails_Integration(t *testing.T) {
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
-	r := gin.Default()
+	r := gin.New()
+	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
 
 	// リクエスト実行
@@ -93,9 +68,6 @@ func TestProgramDetails_Integration(t *testing.T) {
 func TestProgramDetails_WithTagsAndPerformers_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dbConn, q := setupTestDB(t)
-
-	cleanupProgramDetailsTestData(t, dbConn)
-	t.Cleanup(func() { cleanupProgramDetailsTestData(t, dbConn) })
 
 	// 番組insert
 	var programID int64
@@ -149,7 +121,8 @@ func TestProgramDetails_WithTagsAndPerformers_Integration(t *testing.T) {
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
-	r := gin.Default()
+	r := gin.New()
+	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("/programs/%d", programID), nil)
@@ -190,7 +163,8 @@ func TestProgramDetails_InvalidID_Integration(t *testing.T) {
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
-	r := gin.Default()
+	r := gin.New()
+	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
 
 	req, _ := http.NewRequest("GET", "/programs/abc", nil)
@@ -213,6 +187,7 @@ func TestProgramDetails_NotFound_Integration(t *testing.T) {
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
 	r := gin.Default()
+	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
 
 	req, _ := http.NewRequest("GET", "/programs/999999", nil)
@@ -230,9 +205,6 @@ func TestProgramDetails_LimitedReleaseAndPrice_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dbConn, q := setupTestDB(t)
 
-	cleanupProgramDetailsTestData(t, dbConn)
-	t.Cleanup(func() { cleanupProgramDetailsTestData(t, dbConn) })
-
 	// 限定公開＋有料の番組insert
 	var programID int64
 	err := dbConn.QueryRow(
@@ -248,7 +220,8 @@ func TestProgramDetails_LimitedReleaseAndPrice_Integration(t *testing.T) {
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
 	r := gin.Default()
-	r.GET("/programs/:id", h.ProgramDetails)
+	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
+		r.GET("/programs/:id", h.ProgramDetails)
 
 	req, _ := http.NewRequest("GET", fmt.Sprintf("/programs/%d", programID), nil)
 	w := httptest.NewRecorder()
@@ -273,9 +246,6 @@ func TestProgramDetails_ViewCountIncrement_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dbConn, q := setupTestDB(t)
 
-	cleanupProgramDetailsTestData(t, dbConn)
-	t.Cleanup(func() { cleanupProgramDetailsTestData(t, dbConn) })
-
 	// view_count=0で番組insert
 	var programID int64
 	err := dbConn.QueryRow(
@@ -291,6 +261,7 @@ func TestProgramDetails_ViewCountIncrement_Integration(t *testing.T) {
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
 	r := gin.Default()
+	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
 
 	// 1回目のリクエスト
@@ -312,4 +283,70 @@ func TestProgramDetails_ViewCountIncrement_Integration(t *testing.T) {
 		t.Fatalf("failed to query view_count: %v", err)
 	}
 	assert.Equal(t, 2, viewCount)
+}
+
+func TestProgramDetails_LimitedReleasePermission_Integration(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	dbConn, q := setupTestDB(t)
+
+	// テストユーザー
+	userID := "test-user-1"
+	_, err := dbConn.Exec(`INSERT INTO "user" (id, name, email, "emailVerified") VALUES ($1, $2, $3, true)`,
+		userID, "テストユーザー", "test@example.com")
+	if err != nil {
+		t.Fatalf("failed to insert test user: %v", err)
+	}
+
+	// 限定公開番組insert
+	var programID int64
+	err = dbConn.QueryRow(
+		`INSERT INTO programs (title, video_path, is_limited_release, price) VALUES ($1, $2, $3, $4) RETURNING id`,
+		"permtest-limited", "/video/permtest.mp4", true, 100,
+	).Scan(&programID)
+	if err != nil {
+		t.Fatalf("failed to insert test program: %v", err)
+	}
+
+	programsUC := usecase.NewProgramsUsecase(q)
+	dummyUsersUC := &usecase.UsersUsecase{}
+	dummyPayPayUC := &usecase.PayPayUsecase{}
+	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	r := gin.Default()
+	r.Use(MockOptionalAuth(userID)) // 認証ユーザーとしてuserIDをセット
+	r.GET("/programs/:id", h.ProgramDetails)
+
+	// --- 閲覧権限なしパターン ---
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/programs/%d", programID), nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	var resp struct {
+		Program map[string]interface{} `json:"program"`
+		IsPermitted bool `json:"is_permitted"`
+	}
+	err = json.Unmarshal(w.Body.Bytes(), &resp)
+	if err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	assert.Equal(t, false, resp.IsPermitted)
+	assert.Equal(t, "", resp.Program["video_url"])
+
+	// --- 閲覧権限ありパターン ---
+	_, err = dbConn.Exec(`INSERT INTO permitted_program_users (user_id, program_id) VALUES ($1, $2)`, userID, programID)
+	if err != nil {
+		t.Fatalf("failed to insert permitted_program_users: %v", err)
+	}
+
+	// 認証ユーザーとしてアクセス（ヘッダーで認証情報をセット）
+	reqAuth, _ := http.NewRequest("GET", fmt.Sprintf("/programs/%d", programID), nil)
+	reqAuth.Header.Set("Authorization", "Bearer test-user-1") // テストユーザーIDをセット
+	wAuth := httptest.NewRecorder()
+	r.ServeHTTP(wAuth, reqAuth)
+	err = json.Unmarshal(wAuth.Body.Bytes(), &resp)
+	if err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	// 閲覧権限ありなら動画URLが返ることをassert
+	assert.Equal(t, true, resp.IsPermitted)
+	assert.NotEmpty(t, resp.Program["video_url"])
 }

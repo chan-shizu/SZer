@@ -31,40 +31,59 @@ func NewHandler(programs *usecase.ProgramsUsecase, users *usecase.UsersUsecase, 
 }
 
 func (h *Handler) ProgramDetails(c *gin.Context) {
-	// ログインしていない場合はuserIDを空文字にする
 	userID, _ := middleware.UserIDFromContext(c)
 
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
- 		log.Printf("[ProgramDetails] BadRequest: invalid id. userID=%s, idStr=%s, err=%v", userID, idStr, err)
- 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
- 		return
+		log.Printf("[ProgramDetails] BadRequest: invalid id. userID=%s, idStr=%s, err=%v", userID, idStr, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
 	}
 
 	program, err := h.programs.GetProgramDetails(c.Request.Context(), userID, id)
 	if err != nil {
- 		if errors.Is(err, usecase.ErrProgramNotFound) {
- 			log.Printf("[ProgramDetails] NotFound: program not found. userID=%s, id=%d", userID, id)
- 			c.JSON(http.StatusNotFound, gin.H{"error": "program not found"})
- 			return
- 		}
- 		log.Printf("[ProgramDetails] InternalServerError: failed to get program. userID=%s, id=%d, err=%v", userID, id, err)
- 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get program"})
- 		return
+		if errors.Is(err, usecase.ErrProgramNotFound) {
+			log.Printf("[ProgramDetails] NotFound: program not found. userID=%s, id=%d", userID, id)
+			c.JSON(http.StatusNotFound, gin.H{"error": "program not found"})
+			return
+		}
+		log.Printf("[ProgramDetails] InternalServerError: failed to get program. userID=%s, id=%d, err=%v", userID, id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get program"})
+		return
 	}
 
-	// 視聴回数インクリメント
-	err = h.programs.IncrementViewCount(c.Request.Context(), id)
-	if err != nil {
- 		log.Printf("[ProgramDetails] InternalServerError: failed to increment view count. userID=%s, id=%d, err=%v", userID, id, err)
- 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to increment view count"})
- 		return
+	// 限定公開判定
+	isPermitted := true
+	if program.IsLimitedRelease {
+		isPermitted, err = h.programs.IsUserPermittedForProgram(c.Request.Context(), userID, id)
+		if err != nil {
+			log.Printf("[ProgramDetails] InternalServerError: failed to check permission. userID=%s, id=%d, err=%v", userID, id, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to check permission"})
+			return
+		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	// 視聴回数インクリメント（許可ユーザーのみ）
+	if isPermitted {
+		err = h.programs.IncrementViewCount(c.Request.Context(), id)
+		if err != nil {
+			log.Printf("[ProgramDetails] InternalServerError: failed to increment view count. userID=%s, id=%d, err=%v", userID, id, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to increment view count"})
+			return
+		}
+	}
+
+	// VideoURLをmap格納前に編集
+	if !isPermitted {
+		program.VideoURL = ""
+	}
+
+	resp := gin.H{
 		"program": program,
-	})
+		"is_permitted": isPermitted,
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 func (h *Handler) LikeProgram(c *gin.Context) {

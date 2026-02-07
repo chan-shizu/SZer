@@ -5,8 +5,8 @@ tmp_dir = "tmp"
 [build]
   args_bin = []
   bin = "./tmp/main"
-  cmd = "go build -gcflags=\"all=-N -l\" -o ./tmp/main main.go"
-  full_bin = "dlv --headless=true --listen=:2345 --api-version=2 --accept-multiclient exec --continue ./tmp/main"
+  cmd = "go build -o ./tmp/main main.go"
+  full_bin = "./tmp/main"
   delay = 500
   exclude = []
   exclude_dir = ["assets", "tmp", "vendor", "testdata", ".git"]

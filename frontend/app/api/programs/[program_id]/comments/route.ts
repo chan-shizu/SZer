@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { postComment } from "@/lib/api/comments";
 
-export async function POST(req: NextRequest, context: { params: { program_id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ program_id: string }> }) {
   const { program_id } = await context.params;
 
   try {

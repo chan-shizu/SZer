@@ -71,19 +71,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command:
-      [
-        "/go/bin/dlv",
-        "--listen=:2345",
-        "--headless",
-        "--api-version=2",
-        "--accept-multiclient",
-        "exec",
-        "/go/bin/air",
-        "--",
-        "-c",
-        ".air.toml",
-      ]
+    command: ["/go/bin/air", "--", "-c", ".air.toml"]
 
   frontend:
     build:

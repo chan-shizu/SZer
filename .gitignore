@@ -14,3 +14,8 @@ minio
 # document
 memo.md
 documents/*
+
+# dependencies
+node_modules
+package.json
+package-lock.json

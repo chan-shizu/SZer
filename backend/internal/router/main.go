@@ -16,7 +16,7 @@ func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	usersUC := usecase.NewUsersUsecase(q)
 	paypayUC := usecase.NewPayPayUsecase(conn, q)
 
-	h := handler.New(programsUC, usersUC, paypayUC)
+	h := handler.NewHandler(programsUC, usersUC, paypayUC)
 	commentsHandler := handler.NewCommentsHandler(q)
 	paypayWebhookHandler := handler.NewPayPayWebhookHandler(conn, q)
 

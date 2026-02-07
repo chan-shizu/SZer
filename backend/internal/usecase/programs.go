@@ -49,6 +49,8 @@ type ProgramDetail struct {
 	ViewCount        int64                       `json:"view_count"`
 	LikeCount        int64                       `json:"like_count"`
 	Liked            bool                        `json:"liked"`
+	IsLimitedRelease bool                        `json:"is_limited_release"`
+	Price            int32                       `json:"price"`
 	ThumbnailUrl     *string                     `json:"thumbnail_url"`
 	Description      *string                     `json:"description"`
 	ProgramCreatedAt time.Time                   `json:"program_created_at"`
@@ -59,20 +61,24 @@ type ProgramDetail struct {
 }
 
 type ProgramListItem struct {
-	ProgramID    int64                       `json:"program_id"`
-	Title        string                      `json:"title"`
-	ViewCount    int64                       `json:"view_count"`
-	LikeCount    int64                       `json:"like_count"`
-	ThumbnailUrl *string                     `json:"thumbnail_url"`
-	CategoryTags []ProgramDetailsCategoryTag `json:"category_tags"`
+	ProgramID        int64                       `json:"program_id"`
+	Title            string                      `json:"title"`
+	ViewCount        int64                       `json:"view_count"`
+	LikeCount        int64                       `json:"like_count"`
+	IsLimitedRelease bool                        `json:"is_limited_release"`
+	Price            int32                       `json:"price"`
+	ThumbnailUrl     *string                     `json:"thumbnail_url"`
+	CategoryTags     []ProgramDetailsCategoryTag `json:"category_tags"`
 }
 
 type TopProgramItem struct {
-	ProgramID    int64   `json:"program_id"`
-	Title        string  `json:"title"`
-	ViewCount    int64   `json:"view_count"`
-	LikeCount    int64   `json:"like_count"`
-	ThumbnailUrl *string `json:"thumbnail_url"`
+	ProgramID        int64   `json:"program_id"`
+	Title            string  `json:"title"`
+	ViewCount        int64   `json:"view_count"`
+	LikeCount        int64   `json:"like_count"`
+	IsLimitedRelease bool    `json:"is_limited_release"`
+	Price            int32   `json:"price"`
+	ThumbnailUrl     *string `json:"thumbnail_url"`
 }
 
 type ProgramsUsecase struct {
@@ -181,6 +187,8 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, 
 		ViewCount:        int64(program.ViewCount),
 		LikeCount:        program.LikeCount,
 		Liked:            program.Liked,
+		IsLimitedRelease: program.IsLimitedRelease,
+		Price:            program.Price,
 		ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 		Description:      nullStringPtr(program.Description),
 		ProgramCreatedAt: program.ProgramCreatedAt,
@@ -258,12 +266,14 @@ func (u *ProgramsUsecase) ListPrograms(ctx context.Context, title string, tagIDs
 		}
 
 		results = append(results, ProgramListItem{
-			ProgramID:    program.ProgramID,
-			Title:        program.Title,
-			ViewCount:    int64(program.ViewCount),
-			LikeCount:    program.LikeCount,
-			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
-			CategoryTags: categoryTags,
+			ProgramID:        program.ProgramID,
+			Title:            program.Title,
+			ViewCount:        int64(program.ViewCount),
+			LikeCount:        program.LikeCount,
+			IsLimitedRelease: program.IsLimitedRelease,
+			Price:            program.Price,
+			ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
+			CategoryTags:     categoryTags,
 		})
 	}
 
@@ -279,11 +289,13 @@ func (u *ProgramsUsecase) ListTopPrograms(ctx context.Context) ([]TopProgramItem
 	results := make([]TopProgramItem, 0, len(programs))
 	for _, program := range programs {
 		results = append(results, TopProgramItem{
-			ProgramID:    program.ProgramID,
-			Title:        program.Title,
-			ViewCount:    int64(program.ViewCount),
-			LikeCount:    program.LikeCount,
-			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
+			ProgramID:        program.ProgramID,
+			Title:            program.Title,
+			ViewCount:        int64(program.ViewCount),
+			LikeCount:        program.LikeCount,
+			IsLimitedRelease: program.IsLimitedRelease,
+			Price:            program.Price,
+			ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(program.ThumbnailPath)),
 		})
 	}
 
@@ -299,11 +311,13 @@ func (u *ProgramsUsecase) ListTopLikedPrograms(ctx context.Context) ([]TopProgra
 	results := make([]TopProgramItem, 0, len(rows))
 	for _, row := range rows {
 		results = append(results, TopProgramItem{
-			ProgramID:    row.ProgramID,
-			Title:        row.Title,
-			ViewCount:    int64(row.ViewCount),
-			LikeCount:    row.LikeCount,
-			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
+			ProgramID:        row.ProgramID,
+			Title:            row.Title,
+			ViewCount:        int64(row.ViewCount),
+			LikeCount:        row.LikeCount,
+			IsLimitedRelease: row.IsLimitedRelease,
+			Price:            row.Price,
+			ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
 		})
 	}
 
@@ -319,11 +333,13 @@ func (u *ProgramsUsecase) ListTopViewedPrograms(ctx context.Context) ([]TopProgr
 	results := make([]TopProgramItem, 0, len(rows))
 	for _, row := range rows {
 		results = append(results, TopProgramItem{
-			ProgramID:    row.ProgramID,
-			Title:        row.Title,
-			ViewCount:    int64(row.ViewCount),
-			LikeCount:    row.LikeCount,
-			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
+			ProgramID:        row.ProgramID,
+			Title:            row.Title,
+			ViewCount:        int64(row.ViewCount),
+			LikeCount:        row.LikeCount,
+			IsLimitedRelease: row.IsLimitedRelease,
+			Price:            row.Price,
+			ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
 		})
 	}
 
@@ -348,12 +364,14 @@ func (u *ProgramsUsecase) ListWatchingPrograms(ctx context.Context, userID strin
 		}
 
 		results = append(results, ProgramListItem{
-			ProgramID:    row.ProgramID,
-			Title:        row.Title,
-			ViewCount:    int64(row.ViewCount),
-			LikeCount:    row.LikeCount,
-			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
-			CategoryTags: categoryTags,
+			ProgramID:        row.ProgramID,
+			Title:            row.Title,
+			ViewCount:        int64(row.ViewCount),
+			LikeCount:        row.LikeCount,
+			IsLimitedRelease: row.IsLimitedRelease,
+			Price:            row.Price,
+			ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
+			CategoryTags:     categoryTags,
 		})
 	}
 
@@ -378,12 +396,14 @@ func (u *ProgramsUsecase) ListLikedPrograms(ctx context.Context, userID string) 
 		}
 
 		results = append(results, ProgramListItem{
-			ProgramID:    row.ProgramID,
-			Title:        row.Title,
-			ViewCount:    int64(row.ViewCount),
-			LikeCount:    row.LikeCount,
-			ThumbnailUrl: buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
-			CategoryTags: categoryTags,
+			ProgramID:        row.ProgramID,
+			Title:            row.Title,
+			ViewCount:        int64(row.ViewCount),
+			LikeCount:        row.LikeCount,
+			IsLimitedRelease: row.IsLimitedRelease,
+			Price:            row.Price,
+			ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
+			CategoryTags:     categoryTags,
 		})
 	}
 

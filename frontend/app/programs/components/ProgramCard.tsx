@@ -19,6 +19,10 @@ export const ProgramCard = ({ program }: Props) => {
     >
       <div className="flex-1 pr-4">
         <h3 className="text-sm font-semibold text-foreground mb-1">{program.title}</h3>
+        {/* 料金表示 */}
+        {program.is_limited_release && program.price > 0 && (
+          <div className="text-xs font-bold text-pink-600 mb-1">¥{program.price.toLocaleString()}（税込）</div>
+        )}
         <div className="flex items-center gap-x-3 text-xs text-gray-600 mb-1">
           <div>視聴回数: {program.view_count}回</div>
           <div className="flex items-center gap-x-1">
@@ -37,10 +41,15 @@ export const ProgramCard = ({ program }: Props) => {
           })}
         </div>
       </div>
-
       {program.thumbnail_url ? (
         <div className="relative w-32 h-16">
           <Image src={program.thumbnail_url} alt={program.title} fill sizes="128px" className="rounded object-cover" />
+          {/* 限定公開ラベル */}
+          {program.is_limited_release && (
+            <span className="absolute top-1 left-1 bg-pink-600 text-white text-[10px] font-bold px-2 py-0.5 rounded z-10 shadow">
+              限定公開
+            </span>
+          )}
         </div>
       ) : (
         <div className="">

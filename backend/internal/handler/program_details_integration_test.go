@@ -82,6 +82,8 @@ func TestProgramDetails_Integration(t *testing.T) {
 	assert.NotNil(t, resp.Program["view_count"])
 	assert.NotNil(t, resp.Program["like_count"])
 	assert.Equal(t, false, resp.Program["liked"])
+	assert.Equal(t, false, resp.Program["is_limited_release"])
+	assert.Equal(t, float64(0), resp.Program["price"])
 	assert.NotNil(t, resp.Program["category_tags"])
 	assert.NotNil(t, resp.Program["performers"])
 	// 未認証なのでwatch_historyはnull
@@ -222,6 +224,49 @@ func TestProgramDetails_NotFound_Integration(t *testing.T) {
 	var resp map[string]interface{}
 	json.Unmarshal(w.Body.Bytes(), &resp)
 	assert.Equal(t, "program not found", resp["error"])
+}
+
+func TestProgramDetails_LimitedReleaseAndPrice_Integration(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	dbConn, q := setupTestDB(t)
+
+	cleanupProgramDetailsTestData(t, dbConn)
+	t.Cleanup(func() { cleanupProgramDetailsTestData(t, dbConn) })
+
+	// 限定公開＋有料の番組insert
+	var programID int64
+	err := dbConn.QueryRow(
+		`INSERT INTO programs (title, video_path, is_limited_release, price) VALUES ($1, $2, $3, $4) RETURNING id`,
+		"limited-program", "/video/limited.mp4", true, 500,
+	).Scan(&programID)
+	if err != nil {
+		t.Fatalf("failed to insert test program: %v", err)
+	}
+
+	programsUC := usecase.NewProgramsUsecase(q)
+	dummyUsersUC := &usecase.UsersUsecase{}
+	dummyPayPayUC := &usecase.PayPayUsecase{}
+	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	r := gin.Default()
+	r.GET("/programs/:id", h.ProgramDetails)
+
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/programs/%d", programID), nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp struct {
+		Program map[string]interface{} `json:"program"`
+	}
+	err = json.Unmarshal(w.Body.Bytes(), &resp)
+	if err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+
+	assert.Equal(t, "limited-program", resp.Program["title"])
+	assert.Equal(t, true, resp.Program["is_limited_release"])
+	assert.Equal(t, float64(500), resp.Program["price"])
 }
 
 func TestProgramDetails_ViewCountIncrement_Integration(t *testing.T) {

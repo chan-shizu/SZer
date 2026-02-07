@@ -18,28 +18,34 @@ INSERT INTO programs (
   title,
   video_path,
   thumbnail_path,
-  description
+  description,
+  is_limited_release,
+  price
 ) VALUES (
-  $1, $2, $3, $4
+  $1, $2, $3, $4, $5, $6
 )
-RETURNING id, title, video_path, thumbnail_path, description, created_at, updated_at
+RETURNING id, title, video_path, thumbnail_path, description, is_limited_release, price, created_at, updated_at
 `
 
 type CreateProgramParams struct {
-	Title         string         `json:"title"`
-	VideoPath     string         `json:"video_path"`
-	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	Description   sql.NullString `json:"description"`
+	Title            string         `json:"title"`
+	VideoPath        string         `json:"video_path"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	Description      sql.NullString `json:"description"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
 }
 
 type CreateProgramRow struct {
-	ID            int64          `json:"id"`
-	Title         string         `json:"title"`
-	VideoPath     string         `json:"video_path"`
-	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	Description   sql.NullString `json:"description"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
+	ID               int64          `json:"id"`
+	Title            string         `json:"title"`
+	VideoPath        string         `json:"video_path"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	Description      sql.NullString `json:"description"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
 }
 
 func (q *Queries) CreateProgram(ctx context.Context, arg CreateProgramParams) (CreateProgramRow, error) {
@@ -48,6 +54,8 @@ func (q *Queries) CreateProgram(ctx context.Context, arg CreateProgramParams) (C
 		arg.VideoPath,
 		arg.ThumbnailPath,
 		arg.Description,
+		arg.IsLimitedRelease,
+		arg.Price,
 	)
 	var i CreateProgramRow
 	err := row.Scan(
@@ -56,6 +64,8 @@ func (q *Queries) CreateProgram(ctx context.Context, arg CreateProgramParams) (C
 		&i.VideoPath,
 		&i.ThumbnailPath,
 		&i.Description,
+		&i.IsLimitedRelease,
+		&i.Price,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -85,6 +95,8 @@ SELECT
   p.thumbnail_path,
   p.description,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   p.created_at AS program_created_at,
   p.updated_at AS program_updated_at,
   COALESCE(
@@ -118,6 +130,8 @@ GROUP BY
   p.thumbnail_path,
   p.description,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   p.created_at,
   p.updated_at
 `
@@ -129,6 +143,8 @@ type GetProgramByIDRow struct {
 	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
 	Description      sql.NullString `json:"description"`
 	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
 	ProgramCreatedAt time.Time      `json:"program_created_at"`
 	ProgramUpdatedAt time.Time      `json:"program_updated_at"`
 	CategoryTags     interface{}    `json:"category_tags"`
@@ -146,6 +162,8 @@ func (q *Queries) GetProgramByID(ctx context.Context, id int64) (GetProgramByIDR
 		&i.ThumbnailPath,
 		&i.Description,
 		&i.ViewCount,
+		&i.IsLimitedRelease,
+		&i.Price,
 		&i.ProgramCreatedAt,
 		&i.ProgramUpdatedAt,
 		&i.CategoryTags,
@@ -162,6 +180,8 @@ SELECT
   p.thumbnail_path,
   p.description,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   EXISTS(
     SELECT 1
@@ -201,6 +221,8 @@ GROUP BY
   p.thumbnail_path,
   p.description,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   p.created_at,
   p.updated_at
 `
@@ -217,6 +239,8 @@ type GetProgramDetailsByIDRow struct {
 	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
 	Description      sql.NullString `json:"description"`
 	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
 	LikeCount        int64          `json:"like_count"`
 	Liked            bool           `json:"liked"`
 	ProgramCreatedAt time.Time      `json:"program_created_at"`
@@ -236,6 +260,8 @@ func (q *Queries) GetProgramDetailsByID(ctx context.Context, arg GetProgramDetai
 		&i.ThumbnailPath,
 		&i.Description,
 		&i.ViewCount,
+		&i.IsLimitedRelease,
+		&i.Price,
 		&i.LikeCount,
 		&i.Liked,
 		&i.ProgramCreatedAt,
@@ -252,6 +278,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
@@ -279,7 +307,9 @@ GROUP BY
   p.id,
   p.title,
   p.thumbnail_path,
-  p.view_count
+  p.view_count,
+  p.is_limited_release,
+  p.price
 `
 
 type GetProgramsParams struct {
@@ -288,12 +318,14 @@ type GetProgramsParams struct {
 }
 
 type GetProgramsRow struct {
-	ProgramID     int64          `json:"program_id"`
-	Title         string         `json:"title"`
-	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int32          `json:"view_count"`
-	LikeCount     int64          `json:"like_count"`
-	CategoryTags  interface{}    `json:"category_tags"`
+	ProgramID        int64          `json:"program_id"`
+	Title            string         `json:"title"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
+	LikeCount        int64          `json:"like_count"`
+	CategoryTags     interface{}    `json:"category_tags"`
 }
 
 // 視聴回数はprogramsテーブルのview_countを参照
@@ -311,6 +343,8 @@ func (q *Queries) GetPrograms(ctx context.Context, arg GetProgramsParams) ([]Get
 			&i.Title,
 			&i.ThumbnailPath,
 			&i.ViewCount,
+			&i.IsLimitedRelease,
+			&i.Price,
 			&i.LikeCount,
 			&i.CategoryTags,
 		); err != nil {
@@ -359,6 +393,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   s.like_count
 FROM selected s
 JOIN programs p ON p.id = s.program_id
@@ -366,11 +402,13 @@ ORDER BY s.like_count DESC, p.created_at DESC
 `
 
 type GetTopLikedProgramsRow struct {
-	ProgramID     int64          `json:"program_id"`
-	Title         string         `json:"title"`
-	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int32          `json:"view_count"`
-	LikeCount     int64          `json:"like_count"`
+	ProgramID        int64          `json:"program_id"`
+	Title            string         `json:"title"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
+	LikeCount        int64          `json:"like_count"`
 }
 
 func (q *Queries) GetTopLikedPrograms(ctx context.Context, limit sql.NullInt32) ([]GetTopLikedProgramsRow, error) {
@@ -387,6 +425,8 @@ func (q *Queries) GetTopLikedPrograms(ctx context.Context, limit sql.NullInt32) 
 			&i.Title,
 			&i.ThumbnailPath,
 			&i.ViewCount,
+			&i.IsLimitedRelease,
+			&i.Price,
 			&i.LikeCount,
 		); err != nil {
 			return nil, err
@@ -408,6 +448,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count
 FROM programs p
 ORDER BY p.created_at DESC
@@ -415,11 +457,13 @@ LIMIT 7
 `
 
 type GetTopProgramsRow struct {
-	ProgramID     int64          `json:"program_id"`
-	Title         string         `json:"title"`
-	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int32          `json:"view_count"`
-	LikeCount     int64          `json:"like_count"`
+	ProgramID        int64          `json:"program_id"`
+	Title            string         `json:"title"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
+	LikeCount        int64          `json:"like_count"`
 }
 
 // 視聴回数はprogramsテーブルのview_countを参照
@@ -437,6 +481,8 @@ func (q *Queries) GetTopPrograms(ctx context.Context) ([]GetTopProgramsRow, erro
 			&i.Title,
 			&i.ThumbnailPath,
 			&i.ViewCount,
+			&i.IsLimitedRelease,
+			&i.Price,
 			&i.LikeCount,
 		); err != nil {
 			return nil, err
@@ -465,6 +511,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE(lc.like_count, 0)::bigint AS like_count
 FROM programs p
 LEFT JOIN likes_count lc ON lc.program_id = p.id
@@ -473,11 +521,13 @@ LIMIT COALESCE($1::int, 7)
 `
 
 type GetTopViewedProgramsRow struct {
-	ProgramID     int64          `json:"program_id"`
-	Title         string         `json:"title"`
-	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int32          `json:"view_count"`
-	LikeCount     int64          `json:"like_count"`
+	ProgramID        int64          `json:"program_id"`
+	Title            string         `json:"title"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
+	LikeCount        int64          `json:"like_count"`
 }
 
 func (q *Queries) GetTopViewedPrograms(ctx context.Context, limit sql.NullInt32) ([]GetTopViewedProgramsRow, error) {
@@ -494,6 +544,8 @@ func (q *Queries) GetTopViewedPrograms(ctx context.Context, limit sql.NullInt32)
 			&i.Title,
 			&i.ThumbnailPath,
 			&i.ViewCount,
+			&i.IsLimitedRelease,
+			&i.Price,
 			&i.LikeCount,
 		); err != nil {
 			return nil, err

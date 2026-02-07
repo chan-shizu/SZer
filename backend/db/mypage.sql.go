@@ -16,6 +16,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
@@ -34,6 +36,8 @@ GROUP BY
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   lk.created_at
 ORDER BY lk.created_at DESC
 LIMIT COALESCE($3::int, 50)
@@ -47,12 +51,14 @@ type ListLikedProgramsByUserParams struct {
 }
 
 type ListLikedProgramsByUserRow struct {
-	ProgramID     int64          `json:"program_id"`
-	Title         string         `json:"title"`
-	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int32          `json:"view_count"`
-	LikeCount     int64          `json:"like_count"`
-	CategoryTags  interface{}    `json:"category_tags"`
+	ProgramID        int64          `json:"program_id"`
+	Title            string         `json:"title"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
+	LikeCount        int64          `json:"like_count"`
+	CategoryTags     interface{}    `json:"category_tags"`
 }
 
 // 視聴回数はprogramsテーブルのview_countを参照
@@ -70,6 +76,8 @@ func (q *Queries) ListLikedProgramsByUser(ctx context.Context, arg ListLikedProg
 			&i.Title,
 			&i.ThumbnailPath,
 			&i.ViewCount,
+			&i.IsLimitedRelease,
+			&i.Price,
 			&i.LikeCount,
 			&i.CategoryTags,
 		); err != nil {
@@ -92,6 +100,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
@@ -110,6 +120,8 @@ GROUP BY
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   wh.last_watched_at
 ORDER BY wh.last_watched_at DESC
 LIMIT COALESCE($3::int, 50)
@@ -123,12 +135,14 @@ type ListWatchingProgramsByUserParams struct {
 }
 
 type ListWatchingProgramsByUserRow struct {
-	ProgramID     int64          `json:"program_id"`
-	Title         string         `json:"title"`
-	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	ViewCount     int32          `json:"view_count"`
-	LikeCount     int64          `json:"like_count"`
-	CategoryTags  interface{}    `json:"category_tags"`
+	ProgramID        int64          `json:"program_id"`
+	Title            string         `json:"title"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
+	LikeCount        int64          `json:"like_count"`
+	CategoryTags     interface{}    `json:"category_tags"`
 }
 
 // 視聴回数はprogramsテーブルのview_countを参照
@@ -146,6 +160,8 @@ func (q *Queries) ListWatchingProgramsByUser(ctx context.Context, arg ListWatchi
 			&i.Title,
 			&i.ThumbnailPath,
 			&i.ViewCount,
+			&i.IsLimitedRelease,
+			&i.Price,
 			&i.LikeCount,
 			&i.CategoryTags,
 		); err != nil {

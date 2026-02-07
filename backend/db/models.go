@@ -73,14 +73,16 @@ type Performer struct {
 }
 
 type Program struct {
-	ID            int64          `json:"id"`
-	Title         string         `json:"title"`
-	VideoPath     string         `json:"video_path"`
-	ThumbnailPath sql.NullString `json:"thumbnail_path"`
-	Description   sql.NullString `json:"description"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
-	ViewCount     int32          `json:"view_count"`
+	ID               int64          `json:"id"`
+	Title            string         `json:"title"`
+	VideoPath        string         `json:"video_path"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	Description      sql.NullString `json:"description"`
+	CreatedAt        time.Time      `json:"created_at"`
+	UpdatedAt        time.Time      `json:"updated_at"`
+	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
 }
 
 type ProgramCategoryTag struct {

@@ -3,11 +3,13 @@ INSERT INTO programs (
   title,
   video_path,
   thumbnail_path,
-  description
+  description,
+  is_limited_release,
+  price
 ) VALUES (
-  $1, $2, $3, $4
+  $1, $2, $3, $4, $5, $6
 )
-RETURNING id, title, video_path, thumbnail_path, description, created_at, updated_at;
+RETURNING id, title, video_path, thumbnail_path, description, is_limited_release, price, created_at, updated_at;
 
 -- name: GetProgramByID :one
 SELECT
@@ -17,6 +19,8 @@ SELECT
   p.thumbnail_path,
   p.description,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   p.created_at AS program_created_at,
   p.updated_at AS program_updated_at,
   COALESCE(
@@ -51,6 +55,8 @@ GROUP BY
   p.thumbnail_path,
   p.description,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   p.created_at,
   p.updated_at;
 
@@ -62,6 +68,8 @@ SELECT
   p.thumbnail_path,
   p.description,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   EXISTS(
     SELECT 1
@@ -102,6 +110,8 @@ GROUP BY
   p.thumbnail_path,
   p.description,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   p.created_at,
   p.updated_at;
 
@@ -111,6 +121,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
@@ -139,7 +151,9 @@ GROUP BY
   p.id,
   p.title,
   p.thumbnail_path,
-  p.view_count;
+  p.view_count,
+  p.is_limited_release,
+  p.price;
 
 -- name: GetTopPrograms :many
 SELECT
@@ -147,6 +161,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count
 FROM programs p
 -- 視聴回数はprogramsテーブルのview_countを参照
@@ -185,6 +201,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   s.like_count
 FROM selected s
 JOIN programs p ON p.id = s.program_id
@@ -203,6 +221,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE(lc.like_count, 0)::bigint AS like_count
 FROM programs p
 LEFT JOIN likes_count lc ON lc.program_id = p.id

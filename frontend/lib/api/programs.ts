@@ -23,6 +23,8 @@ export type ProgramDetails = {
   view_count: number;
   like_count: number;
   liked: boolean;
+  is_limited_release: boolean;
+  price: number;
   thumbnail_url: string | null;
   description: string | null;
   program_created_at: string;
@@ -41,6 +43,8 @@ export type ProgramListItem = {
   title: string;
   view_count: number;
   like_count: number;
+  is_limited_release: boolean;
+  price: number;
   thumbnail_url: string | null;
   category_tags: ProgramDetailsCategoryTag[];
 };
@@ -66,6 +70,8 @@ export type TopProgramItem = {
   title: string;
   view_count: number;
   like_count: number;
+  is_limited_release: boolean;
+  price: number;
   thumbnail_url: string | null;
 };
 

@@ -4,6 +4,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
@@ -23,6 +25,8 @@ GROUP BY
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   wh.last_watched_at
 ORDER BY wh.last_watched_at DESC
 LIMIT COALESCE(sqlc.narg('limit')::int, 50)
@@ -34,6 +38,8 @@ SELECT
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
   COALESCE(
     jsonb_agg(DISTINCT jsonb_build_object(
@@ -53,6 +59,8 @@ GROUP BY
   p.title,
   p.thumbnail_path,
   p.view_count,
+  p.is_limited_release,
+  p.price,
   lk.created_at
 ORDER BY lk.created_at DESC
 LIMIT COALESCE(sqlc.narg('limit')::int, 50)

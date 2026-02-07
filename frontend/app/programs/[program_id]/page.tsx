@@ -30,6 +30,17 @@ export default async function Page({ params }: Props) {
       {/* 下部だけスクロール可能 */}
       <div className="flex-1 min-h-0 overflow-y-auto p-4 grid gap-y-4 bg-white">
         <Title title={programDetail.program.title} />
+        {/* 限定公開ラベル＆料金 */}
+        {programDetail.program.is_limited_release && (
+          <div className="flex items-center gap-x-3 mt-1">
+            <span className="bg-pink-600 text-white text-xs font-bold px-2 py-0.5 rounded shadow">限定公開</span>
+            {programDetail.program.price > 0 && (
+              <span className="text-xs font-bold text-pink-600">
+                ¥{programDetail.program.price.toLocaleString()}（税込）
+              </span>
+            )}
+          </div>
+        )}
         <div className="flex items-center justify-between gap-x-4">
           <div className="text-sm text-gray-600">視聴回数: {programDetail.program.view_count}回</div>
           <LikeButton

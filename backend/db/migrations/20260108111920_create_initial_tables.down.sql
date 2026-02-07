@@ -18,10 +18,12 @@ DROP INDEX IF EXISTS session_userId_idx;
 DROP TABLE IF EXISTS verification;
 DROP TABLE IF EXISTS account;
 DROP TABLE IF EXISTS session;
+-- userテーブルに依存するcommentsを先にdrop
+DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS "user";
 
 -- App tables
-DROP TABLE IF EXISTS comments;
+-- commentsは上でdrop済み
 DROP TABLE IF EXISTS program_performers;
 DROP TABLE IF EXISTS performers;
 DROP TABLE IF EXISTS program_category_tags;

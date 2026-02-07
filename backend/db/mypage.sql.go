@@ -30,7 +30,7 @@ FROM likes lk
 JOIN programs p ON p.id = lk.program_id
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
-WHERE lk.user_id = $1
+WHERE lk.user_id = $1 AND p.is_public = true
 GROUP BY
   p.id,
   p.title,
@@ -114,7 +114,7 @@ FROM watch_histories wh
 JOIN programs p ON p.id = wh.program_id
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
-WHERE wh.user_id = $1 AND wh.is_completed = FALSE
+WHERE wh.user_id = $1 AND wh.is_completed = FALSE AND p.is_public = true
 GROUP BY
   p.id,
   p.title,

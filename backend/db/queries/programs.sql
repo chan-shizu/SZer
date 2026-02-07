@@ -47,7 +47,7 @@ LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 LEFT JOIN program_performers pp ON p.id = pp.program_id
 LEFT JOIN performers pe ON pp.performer_id = pe.id
-WHERE p.id = $1
+WHERE p.id = $1 AND p.is_public = true
 GROUP BY
   p.id,
   p.title,
@@ -102,7 +102,7 @@ LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 LEFT JOIN program_performers pp ON p.id = pp.program_id
 LEFT JOIN performers pe ON pp.performer_id = pe.id
-WHERE p.id = $1
+WHERE p.id = $1 AND p.is_public = true
 GROUP BY
   p.id,
   p.title,
@@ -136,7 +136,8 @@ FROM programs p
 LEFT JOIN program_category_tags pct ON p.id = pct.program_id
 LEFT JOIN category_tags ct ON pct.tag_id = ct.id
 WHERE
-  (sqlc.narg('title')::text IS NULL OR p.title ILIKE '%' || sqlc.narg('title')::text || '%')
+  p.is_public = true
+  AND (sqlc.narg('title')::text IS NULL OR p.title ILIKE '%' || sqlc.narg('title')::text || '%')
   AND (
     sqlc.narg('tag_ids')::bigint[] IS NULL
     OR p.id IN (
@@ -165,6 +166,7 @@ SELECT
   p.price,
   COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count
 FROM programs p
+WHERE p.is_public = true
 -- 視聴回数はprogramsテーブルのview_countを参照
 ORDER BY p.created_at DESC
 LIMIT 7;
@@ -178,6 +180,8 @@ top_likes AS (
     l.program_id,
     COUNT(*)::bigint AS like_count
   FROM likes l
+  JOIN programs p ON l.program_id = p.id
+  WHERE p.is_public = true
   GROUP BY l.program_id
   ORDER BY like_count DESC
   LIMIT (SELECT n FROM params)
@@ -187,7 +191,7 @@ fallback AS (
     p.id AS program_id,
     0::bigint AS like_count
   FROM programs p
-  WHERE p.id NOT IN (SELECT program_id FROM top_likes)
+  WHERE p.is_public = true AND p.id NOT IN (SELECT program_id FROM top_likes)
   ORDER BY p.created_at DESC
   LIMIT GREATEST((SELECT n FROM params) - (SELECT COUNT(*) FROM top_likes), 0)
 ),
@@ -226,6 +230,7 @@ SELECT
   COALESCE(lc.like_count, 0)::bigint AS like_count
 FROM programs p
 LEFT JOIN likes_count lc ON lc.program_id = p.id
+WHERE p.is_public = true
 ORDER BY p.view_count DESC, p.created_at DESC
 LIMIT COALESCE(sqlc.narg('limit')::int, 7);
 

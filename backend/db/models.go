@@ -83,6 +83,7 @@ type Program struct {
 	ViewCount        int32          `json:"view_count"`
 	IsLimitedRelease bool           `json:"is_limited_release"`
 	Price            int32          `json:"price"`
+	IsPublic         bool           `json:"is_public"`
 }
 
 type ProgramCategoryTag struct {

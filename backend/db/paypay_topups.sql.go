@@ -51,6 +51,33 @@ func (q *Queries) CreatePayPayTopup(ctx context.Context, arg CreatePayPayTopupPa
 	return i, err
 }
 
+const getPayPayTopupByMerchantPaymentIDForUpdate = `-- name: GetPayPayTopupByMerchantPaymentIDForUpdate :one
+
+SELECT id, user_id, merchant_payment_id, amount_yen, status, paypay_code_id, paypay_payment_id, created_at, updated_at, credited_at
+FROM paypay_topups
+WHERE merchant_payment_id = $1
+FOR UPDATE
+`
+
+// Webhook用クエリ (merchant_payment_idのみで検索、userIdはWebhookに含まれないため)
+func (q *Queries) GetPayPayTopupByMerchantPaymentIDForUpdate(ctx context.Context, merchantPaymentID string) (PaypayTopup, error) {
+	row := q.db.QueryRowContext(ctx, getPayPayTopupByMerchantPaymentIDForUpdate, merchantPaymentID)
+	var i PaypayTopup
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.MerchantPaymentID,
+		&i.AmountYen,
+		&i.Status,
+		&i.PaypayCodeID,
+		&i.PaypayPaymentID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.CreditedAt,
+	)
+	return i, err
+}
+
 const getPayPayTopupForUpdate = `-- name: GetPayPayTopupForUpdate :one
 SELECT id, user_id, merchant_payment_id, amount_yen, status, paypay_code_id, paypay_payment_id, created_at, updated_at, credited_at
 FROM paypay_topups
@@ -107,6 +134,29 @@ func (q *Queries) MarkPayPayTopupCredited(ctx context.Context, arg MarkPayPayTop
 	return result.RowsAffected()
 }
 
+const markPayPayTopupCreditedByMerchantPaymentID = `-- name: MarkPayPayTopupCreditedByMerchantPaymentID :execrows
+UPDATE paypay_topups
+SET credited_at = now(),
+    status = 'COMPLETED',
+    paypay_payment_id = $2,
+    updated_at = now()
+WHERE merchant_payment_id = $1
+  AND credited_at IS NULL
+`
+
+type MarkPayPayTopupCreditedByMerchantPaymentIDParams struct {
+	MerchantPaymentID string         `json:"merchant_payment_id"`
+	PaypayPaymentID   sql.NullString `json:"paypay_payment_id"`
+}
+
+func (q *Queries) MarkPayPayTopupCreditedByMerchantPaymentID(ctx context.Context, arg MarkPayPayTopupCreditedByMerchantPaymentIDParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, markPayPayTopupCreditedByMerchantPaymentID, arg.MerchantPaymentID, arg.PaypayPaymentID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const setPayPayTopupCode = `-- name: SetPayPayTopupCode :exec
 UPDATE paypay_topups
 SET paypay_code_id = $3,
@@ -149,5 +199,24 @@ func (q *Queries) UpdatePayPayTopupStatus(ctx context.Context, arg UpdatePayPayT
 		arg.Status,
 		arg.PaypayPaymentID,
 	)
+	return err
+}
+
+const updatePayPayTopupStatusByMerchantPaymentID = `-- name: UpdatePayPayTopupStatusByMerchantPaymentID :exec
+UPDATE paypay_topups
+SET status = $2,
+    paypay_payment_id = COALESCE($3, paypay_payment_id),
+    updated_at = now()
+WHERE merchant_payment_id = $1
+`
+
+type UpdatePayPayTopupStatusByMerchantPaymentIDParams struct {
+	MerchantPaymentID string         `json:"merchant_payment_id"`
+	Status            string         `json:"status"`
+	PaypayPaymentID   sql.NullString `json:"paypay_payment_id"`
+}
+
+func (q *Queries) UpdatePayPayTopupStatusByMerchantPaymentID(ctx context.Context, arg UpdatePayPayTopupStatusByMerchantPaymentIDParams) error {
+	_, err := q.db.ExecContext(ctx, updatePayPayTopupStatusByMerchantPaymentID, arg.MerchantPaymentID, arg.Status, arg.PaypayPaymentID)
 	return err
 }

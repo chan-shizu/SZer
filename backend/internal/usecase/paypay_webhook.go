@@ -4,79 +4,90 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"log"
 
 	"github.com/chan-shizu/SZer/db"
 )
 
 // PayPayWebhookEventHandler はPayPay Webhookイベントごとの処理を行うギャル関数だよ！
 // eventBodyはPayPay WebhookのJSONそのまま
-func PayPayWebhookEventHandler(ctx context.Context, dbConn *sql.DB, q *db.Queries, eventType string, eventBody []byte) error {
-	if eventType == "PAYMENT_COMPLETED" {
-		// Webhookのbodyから必要な情報をパース
-		var payload struct {
-			MerchantPaymentID string `json:"merchantPaymentId"`
-			UserID            string `json:"userId"`
-			PaymentID         string `json:"paymentId"`
-			Status            string `json:"status"`
-			Amount            struct {
-				Amount   int32  `json:"amount"`
-				Currency string `json:"currency"`
-			} `json:"amount"`
-		}
-		if err := json.Unmarshal(eventBody, &payload); err != nil {
-			return fmt.Errorf("invalid webhook body: %w", err)
-		}
-		if payload.MerchantPaymentID == "" || payload.UserID == "" {
-			return errors.New("missing merchantPaymentId or userId")
-		}
+func PayPayWebhookEventHandler(ctx context.Context, dbConn *sql.DB, q *db.Queries, eventBody []byte) error {
+	// PayPayの実際のWebhookペイロード構造
+	var payload struct {
+		NotificationType string `json:"notification_type"`
+		MerchantID       string `json:"merchant_id"`
+		StoreID          string `json:"store_id"`
+		OrderID          string `json:"order_id"`          // PayPayの決済ID (= paymentId)
+		MerchantOrderID  string `json:"merchant_order_id"` // 加盟店が設定した取引ID (= merchantPaymentId)
+		OrderAmount      json.Number `json:"order_amount"`
+		State            string `json:"state"`
+		PaidAt           *string `json:"paid_at"`
+		AuthorizedAt     *string `json:"authorized_at"`
+		ExpiresAt        *string `json:"expires_at"`
+	}
+	if err := json.Unmarshal(eventBody, &payload); err != nil {
+		return fmt.Errorf("invalid webhook body: %w", err)
+	}
 
-		// DB接続取得（グローバルなdbConn/qを使う or DIする設計に後で修正可）
+	log.Printf("[PayPayWebhook] received: notification_type=%s, state=%s, merchant_order_id=%s, order_id=%s",
+		payload.NotificationType, payload.State, payload.MerchantOrderID, payload.OrderID)
 
-		// トランザクションで処理
-		tx, err := dbConn.BeginTx(ctx, &sql.TxOptions{})
+	// Transactionイベントのみ処理
+	if payload.NotificationType != "Transaction" {
+		log.Printf("[PayPayWebhook] ignoring notification_type: %s", payload.NotificationType)
+		return nil
+	}
+
+	if payload.MerchantOrderID == "" {
+		return fmt.Errorf("missing merchant_order_id in webhook payload")
+	}
+
+	// トランザクションで処理
+	tx, err := dbConn.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	qtx := q.WithTx(tx)
+
+	// merchant_payment_id (= merchant_order_id) でTopupレコードを取得
+	topup, err := qtx.GetPayPayTopupByMerchantPaymentIDForUpdate(ctx, payload.MerchantOrderID)
+	if err != nil {
+		return fmt.Errorf("topup not found for merchant_order_id=%s: %w", payload.MerchantOrderID, err)
+	}
+
+	// ステータス更新
+	paypayPaymentID := sql.NullString{String: payload.OrderID, Valid: payload.OrderID != ""}
+	_ = qtx.UpdatePayPayTopupStatusByMerchantPaymentID(ctx, db.UpdatePayPayTopupStatusByMerchantPaymentIDParams{
+		MerchantPaymentID: payload.MerchantOrderID,
+		Status:            payload.State,
+		PaypayPaymentID:   paypayPaymentID,
+	})
+
+	// ポイント付与 (COMPLETEDの場合)
+	if payload.State == "COMPLETED" {
+		affected, err := qtx.MarkPayPayTopupCreditedByMerchantPaymentID(ctx, db.MarkPayPayTopupCreditedByMerchantPaymentIDParams{
+			MerchantPaymentID: payload.MerchantOrderID,
+			PaypayPaymentID:   paypayPaymentID,
+		})
 		if err != nil {
 			return err
 		}
-		defer func() { _ = tx.Rollback() }()
-		qtx := q.WithTx(tx)
-
-		// ステータス更新
-		paypayPaymentID := sql.NullString{String: payload.PaymentID, Valid: payload.PaymentID != ""}
-		_ = qtx.UpdatePayPayTopupStatus(ctx, db.UpdatePayPayTopupStatusParams{
-			UserID:            payload.UserID,
-			MerchantPaymentID: payload.MerchantPaymentID,
-			Status:            payload.Status,
-			PaypayPaymentID:   paypayPaymentID,
-		})
-
-		// ポイント付与
-		if payload.Status == "COMPLETED" {
-			affected, err := qtx.MarkPayPayTopupCredited(ctx, db.MarkPayPayTopupCreditedParams{
-				UserID:            payload.UserID,
-				MerchantPaymentID: payload.MerchantPaymentID,
-				PaypayPaymentID:   paypayPaymentID,
+		if affected == 1 {
+			// DBレコードのamount_yenを使用（Webhookの金額は改ざん防止のため使わない）
+			_, err = qtx.AddPointsToUser(ctx, db.AddPointsToUserParams{
+				ID:     topup.UserID,
+				Points: topup.AmountYen,
 			})
 			if err != nil {
 				return err
 			}
-			if affected == 1 {
-				_, err = qtx.AddPointsToUser(ctx, db.AddPointsToUserParams{
-					ID:     payload.UserID,
-					Points: payload.Amount.Amount,
-				})
-				if err != nil {
-					return err
-				}
-			}
 		}
-
-		if err := tx.Commit(); err != nil {
-			return err
-		}
-		return nil
 	}
-	// 他イベントは未対応
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
 	return nil
 }

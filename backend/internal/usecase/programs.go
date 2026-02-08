@@ -14,6 +14,9 @@ import (
 )
 
 var ErrProgramNotFound = errors.New("program not found")
+var ErrAlreadyPurchased = errors.New("already purchased")
+var ErrInsufficientPoints = errors.New("insufficient points")
+var ErrNotPurchasable = errors.New("program is not purchasable")
 
 type ProgramDetailsCategoryTag struct {
 	ID   int64  `json:"id"`
@@ -82,11 +85,12 @@ type TopProgramItem struct {
 }
 
 type ProgramsUsecase struct {
-	q *db.Queries
+	conn *sql.DB
+	q    *db.Queries
 }
 
-func NewProgramsUsecase(q *db.Queries) *ProgramsUsecase {
-	return &ProgramsUsecase{q: q}
+func NewProgramsUsecase(conn *sql.DB, q *db.Queries) *ProgramsUsecase {
+	return &ProgramsUsecase{conn: conn, q: q}
 }
 
 func (u *ProgramsUsecase) UpsertWatchHistory(ctx context.Context, userID string, programID int64, positionSeconds int32, isCompleted bool) (db.WatchHistory, error) {
@@ -413,6 +417,70 @@ func (u *ProgramsUsecase) ListLikedPrograms(ctx context.Context, userID string) 
 // 視聴回数をインクリメントするメソッドを追加
 func (u *ProgramsUsecase) IncrementViewCount(ctx context.Context, programID int64) error {
 	return u.q.IncrementProgramViewCount(ctx, programID)
+}
+
+// ポイントで番組を購入し、閲覧権限を付与する
+func (u *ProgramsUsecase) PurchaseProgram(ctx context.Context, userID string, programID int64) (int32, error) {
+	// 番組情報取得
+	program, err := u.q.GetProgramForPurchase(ctx, programID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrProgramNotFound
+		}
+		return 0, err
+	}
+
+	// 購入可能かチェック（限定公開かつ有料のみ）
+	if !program.IsLimitedRelease || program.Price <= 0 {
+		return 0, ErrNotPurchasable
+	}
+
+	// 既に購入済みかチェック
+	permitted, err := u.q.IsUserPermittedForProgram(ctx, db.IsUserPermittedForProgramParams{
+		UserID:    userID,
+		ProgramID: programID,
+	})
+	if err != nil {
+		return 0, err
+	}
+	if permitted {
+		return 0, ErrAlreadyPurchased
+	}
+
+	// トランザクション開始
+	tx, err := u.conn.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	qtx := u.q.WithTx(tx)
+
+	// ポイント差し引き（WHERE points >= price でアトミックにチェック）
+	newPoints, err := qtx.DeductPointsFromUser(ctx, db.DeductPointsFromUserParams{
+		ID:     userID,
+		Points: program.Price,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrInsufficientPoints
+		}
+		return 0, err
+	}
+
+	// 閲覧権限付与
+	if err := qtx.AddPermittedProgramUser(ctx, db.AddPermittedProgramUserParams{
+		UserID:    userID,
+		ProgramID: programID,
+	}); err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+
+	return newPoints, nil
 }
 
 // 限定公開動画の閲覧権限チェック

@@ -272,6 +272,25 @@ func (q *Queries) GetProgramDetailsByID(ctx context.Context, arg GetProgramDetai
 	return i, err
 }
 
+const getProgramForPurchase = `-- name: GetProgramForPurchase :one
+SELECT id, is_limited_release, price
+FROM programs
+WHERE id = $1 AND is_public = true
+`
+
+type GetProgramForPurchaseRow struct {
+	ID               int64 `json:"id"`
+	IsLimitedRelease bool  `json:"is_limited_release"`
+	Price            int32 `json:"price"`
+}
+
+func (q *Queries) GetProgramForPurchase(ctx context.Context, id int64) (GetProgramForPurchaseRow, error) {
+	row := q.db.QueryRowContext(ctx, getProgramForPurchase, id)
+	var i GetProgramForPurchaseRow
+	err := row.Scan(&i.ID, &i.IsLimitedRelease, &i.Price)
+	return i, err
+}
+
 const getPrograms = `-- name: GetPrograms :many
 SELECT
   p.id AS program_id,

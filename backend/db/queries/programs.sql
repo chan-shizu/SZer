@@ -246,3 +246,8 @@ SELECT EXISTS(
 UPDATE programs
 SET view_count = view_count + 1
 WHERE id = $1;
+
+-- name: GetProgramForPurchase :one
+SELECT id, is_limited_release, price
+FROM programs
+WHERE id = $1 AND is_public = true;

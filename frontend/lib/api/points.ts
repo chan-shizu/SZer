@@ -1,3 +1,21 @@
+export type GetPointsResponse = {
+  points: number;
+};
+
+export async function getPoints(): Promise<GetPointsResponse> {
+  const res = await fetch("/api/me/points", {
+    method: "GET",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Request failed with status ${res.status}`);
+  }
+
+  return (await res.json()) as GetPointsResponse;
+}
+
 export type AddPointsResponse = {
   points: number;
 };

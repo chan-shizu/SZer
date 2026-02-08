@@ -86,6 +86,52 @@ func (h *Handler) ProgramDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
+func (h *Handler) PurchaseProgram(c *gin.Context) {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		log.Printf("[PurchaseProgram] 認証失敗: userID取得できず err=%v", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		log.Printf("[PurchaseProgram] BadRequest: invalid id. userID=%s, idStr=%s, err=%v", userID, idStr, err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		return
+	}
+
+	points, err := h.programs.PurchaseProgram(c.Request.Context(), userID, id)
+	if err != nil {
+		if errors.Is(err, usecase.ErrProgramNotFound) {
+			log.Printf("[PurchaseProgram] NotFound: program not found. userID=%s, id=%d", userID, id)
+			c.JSON(http.StatusNotFound, gin.H{"error": "program not found"})
+			return
+		}
+		if errors.Is(err, usecase.ErrNotPurchasable) {
+			log.Printf("[PurchaseProgram] BadRequest: not purchasable. userID=%s, id=%d", userID, id)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "program is not purchasable"})
+			return
+		}
+		if errors.Is(err, usecase.ErrAlreadyPurchased) {
+			log.Printf("[PurchaseProgram] Conflict: already purchased. userID=%s, id=%d", userID, id)
+			c.JSON(http.StatusConflict, gin.H{"error": "already purchased"})
+			return
+		}
+		if errors.Is(err, usecase.ErrInsufficientPoints) {
+			log.Printf("[PurchaseProgram] PaymentRequired: insufficient points. userID=%s, id=%d", userID, id)
+			c.JSON(http.StatusPaymentRequired, gin.H{"error": "insufficient points"})
+			return
+		}
+		log.Printf("[PurchaseProgram] InternalServerError: failed to purchase. userID=%s, id=%d, err=%v", userID, id, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to purchase program"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"points": points})
+}
+
 func (h *Handler) LikeProgram(c *gin.Context) {
  	userID, err := middleware.UserIDFromContext(c)
  	if err != nil {

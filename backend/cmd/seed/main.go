@@ -90,9 +90,10 @@ func main() {
 		Name  string
 		Email string
 		Password string
+		points int32
 	}{
-		{ID: "seed-user-1", Name: "Seed User 1", Email: "seed1@example.com", Password: "password"},
-		{ID: "seed-user-2", Name: "Seed User 2", Email: "seed2@example.com", Password: "password"},
+		{ID: "seed-user-1", Name: "Seed User 1", Email: "seed1@example.com", Password: "password", points: 1000},
+		{ID: "seed-user-2", Name: "Seed User 2", Email: "seed2@example.com", Password: "password", points: 0},
 	}
 	for _, u := range seedUsers {
 		if _, err := q.CreateAuthUser(ctx, db.CreateAuthUserParams{
@@ -101,6 +102,7 @@ func main() {
 			Email:         u.Email,
 			EmailVerified: false,
 			Image:         sql.NullString{Valid: false},
+			Points:        u.points,
 		}); err != nil {
 			log.Fatalf("failed to create user %s: %v", u.ID, err)
 		}

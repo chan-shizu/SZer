@@ -12,7 +12,7 @@ import (
 
 func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	router := gin.Default()
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(conn, q)
 	usersUC := usecase.NewUsersUsecase(q)
 	paypayUC := usecase.NewPayPayUsecase(conn, q)
 
@@ -29,7 +29,7 @@ func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	router.GET("/programs", h.ListPrograms)
 	
 	// PayPay Webhook（認証不要）
-	router.POST("/api/paypay/webhook", paypayWebhookHandler.Handle)
+	router.POST("/paypay/webhook", paypayWebhookHandler.Handle)
 	
 	// コメントAPI（未ログインOK）
 	router.GET("/programs/:id/comments", middleware.OptionalAuth(), commentsHandler.ListComments)
@@ -39,6 +39,7 @@ func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	authenticated := router.Group("/")
 	authenticated.Use(middleware.RequireAuth())
 	authenticated.POST("watch-histories", h.UpsertWatchHistory)
+	authenticated.POST("programs/:id/purchase", h.PurchaseProgram)
 	authenticated.POST("programs/:id/like", h.LikeProgram)
 	authenticated.DELETE("programs/:id/like", h.UnlikeProgram)
 	authenticated.GET("me/watching-programs", h.ListWatchingPrograms)

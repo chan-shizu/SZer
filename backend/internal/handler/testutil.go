@@ -12,6 +12,7 @@ import (
 // cleanupProgramDetailsTestData はテストデータを削除する（integration test用共通）
 func cleanupProgramDetailsTestData(t *testing.T, dbConn *sql.DB) {
 	tables := []string{
+		"permitted_program_users",
 		"program_category_tags",
 		"program_performers",
 		"likes",
@@ -19,7 +20,7 @@ func cleanupProgramDetailsTestData(t *testing.T, dbConn *sql.DB) {
 		"programs",
 		"category_tags",
 		"performers",
-		"user", // ユーザーテーブルもクリーンアップ
+		"user",
 	}
 	for _, table := range tables {
 		// テーブル名を必ずダブルクォートで囲む（PostgreSQL予約語対策）

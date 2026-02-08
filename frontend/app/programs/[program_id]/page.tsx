@@ -30,7 +30,12 @@ export default async function Page({ params }: Props) {
             startPositionSeconds={programDetail.program.watch_history?.position_seconds ?? undefined}
           />
         ) : (
-          <LockedVideo thumbnailUrl={programDetail.program.thumbnail_url} title={programDetail.program.title} />
+          <LockedVideo
+            thumbnailUrl={programDetail.program.thumbnail_url}
+            title={programDetail.program.title}
+            price={programDetail.program.price}
+            programId={programIdNumber}
+          />
         )}
       </div>
       {/* 下部だけスクロール可能 */}

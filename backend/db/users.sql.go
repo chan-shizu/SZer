@@ -29,6 +29,26 @@ func (q *Queries) AddPointsToUser(ctx context.Context, arg AddPointsToUserParams
 	return points, err
 }
 
+const deductPointsFromUser = `-- name: DeductPointsFromUser :one
+UPDATE "user"
+SET points = points - $2,
+    "updatedAt" = now()
+WHERE id = $1 AND points >= $2
+RETURNING points
+`
+
+type DeductPointsFromUserParams struct {
+	ID     string `json:"id"`
+	Points int32  `json:"points"`
+}
+
+func (q *Queries) DeductPointsFromUser(ctx context.Context, arg DeductPointsFromUserParams) (int32, error) {
+	row := q.db.QueryRowContext(ctx, deductPointsFromUser, arg.ID, arg.Points)
+	var points int32
+	err := row.Scan(&points)
+	return points, err
+}
+
 const getUserPoints = `-- name: GetUserPoints :one
 SELECT points
 FROM "user"

@@ -26,7 +26,7 @@ func TestProgramDetails_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(dbConn, q)
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
@@ -117,7 +117,7 @@ func TestProgramDetails_WithTagsAndPerformers_Integration(t *testing.T) {
 		t.Fatalf("failed to insert program_performers: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(dbConn, q)
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
@@ -157,9 +157,9 @@ func TestProgramDetails_WithTagsAndPerformers_Integration(t *testing.T) {
 
 func TestProgramDetails_InvalidID_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	_, q := setupTestDB(t)
+	dbConn, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(dbConn, q)
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
@@ -180,9 +180,9 @@ func TestProgramDetails_InvalidID_Integration(t *testing.T) {
 
 func TestProgramDetails_NotFound_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	_, q := setupTestDB(t)
+	dbConn, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(dbConn, q)
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
@@ -215,7 +215,7 @@ func TestProgramDetails_LimitedReleaseAndPrice_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(dbConn, q)
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
@@ -256,7 +256,7 @@ func TestProgramDetails_ViewCountIncrement_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(dbConn, q)
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
@@ -307,7 +307,7 @@ func TestProgramDetails_LimitedReleasePermission_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(dbConn, q)
 	dummyUsersUC := &usecase.UsersUsecase{}
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)

@@ -23,7 +23,7 @@ func TestTop_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(dbConn, q)
 	dummyUsersUC := &usecase.UsersUsecase{} // ダミー
 	dummyPayPayUC := &usecase.PayPayUsecase{}
 	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)

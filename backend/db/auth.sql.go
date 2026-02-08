@@ -18,10 +18,11 @@ INSERT INTO "user" (
   email,
   "emailVerified",
   image,
+  points,
   "createdAt",
   "updatedAt"
 ) VALUES (
-  $1, $2, $3, $4, $5, now(), now()
+  $1, $2, $3, $4, $5, $6, now(), now()
 )
 RETURNING id, name, email, "emailVerified", image, points, "createdAt", "updatedAt"
 `
@@ -32,6 +33,7 @@ type CreateAuthUserParams struct {
 	Email         string         `json:"email"`
 	EmailVerified bool           `json:"emailVerified"`
 	Image         sql.NullString `json:"image"`
+	Points        int32          `json:"points"`
 }
 
 func (q *Queries) CreateAuthUser(ctx context.Context, arg CreateAuthUserParams) (User, error) {
@@ -41,6 +43,7 @@ func (q *Queries) CreateAuthUser(ctx context.Context, arg CreateAuthUserParams) 
 		arg.Email,
 		arg.EmailVerified,
 		arg.Image,
+		arg.Points,
 	)
 	var i User
 	err := row.Scan(

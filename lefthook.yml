@@ -1,0 +1,7 @@
+pre-commit:
+  jobs:
+    - name: backend test
+      tags:
+        - backend
+        - test
+      run: make test DOCKER_EXEC_FLAGS=-T

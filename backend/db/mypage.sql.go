@@ -94,6 +94,89 @@ func (q *Queries) ListLikedProgramsByUser(ctx context.Context, arg ListLikedProg
 	return items, nil
 }
 
+const listPurchasedProgramsByUser = `-- name: ListPurchasedProgramsByUser :many
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path,
+  p.view_count,
+  p.is_limited_release,
+  p.price,
+  COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
+  COALESCE(
+    jsonb_agg(DISTINCT jsonb_build_object(
+      'id', ct.id,
+      'name', ct.name
+    )) FILTER (WHERE ct.id IS NOT NULL),
+    '[]'::jsonb
+  ) AS category_tags
+FROM permitted_program_users ppu
+JOIN programs p ON p.id = ppu.program_id
+LEFT JOIN program_category_tags pct ON p.id = pct.program_id
+LEFT JOIN category_tags ct ON pct.tag_id = ct.id
+WHERE ppu.user_id = $1 AND p.is_public = true
+GROUP BY
+  p.id,
+  p.title,
+  p.thumbnail_path,
+  p.view_count,
+  p.is_limited_release,
+  p.price,
+  ppu.created_at
+ORDER BY ppu.created_at DESC
+LIMIT COALESCE($3::int, 50)
+OFFSET COALESCE($2::int, 0)
+`
+
+type ListPurchasedProgramsByUserParams struct {
+	UserID string        `json:"user_id"`
+	Offset sql.NullInt32 `json:"offset"`
+	Limit  sql.NullInt32 `json:"limit"`
+}
+
+type ListPurchasedProgramsByUserRow struct {
+	ProgramID        int64          `json:"program_id"`
+	Title            string         `json:"title"`
+	ThumbnailPath    sql.NullString `json:"thumbnail_path"`
+	ViewCount        int32          `json:"view_count"`
+	IsLimitedRelease bool           `json:"is_limited_release"`
+	Price            int32          `json:"price"`
+	LikeCount        int64          `json:"like_count"`
+	CategoryTags     interface{}    `json:"category_tags"`
+}
+
+func (q *Queries) ListPurchasedProgramsByUser(ctx context.Context, arg ListPurchasedProgramsByUserParams) ([]ListPurchasedProgramsByUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, listPurchasedProgramsByUser, arg.UserID, arg.Offset, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPurchasedProgramsByUserRow
+	for rows.Next() {
+		var i ListPurchasedProgramsByUserRow
+		if err := rows.Scan(
+			&i.ProgramID,
+			&i.Title,
+			&i.ThumbnailPath,
+			&i.ViewCount,
+			&i.IsLimitedRelease,
+			&i.Price,
+			&i.LikeCount,
+			&i.CategoryTags,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listWatchingProgramsByUser = `-- name: ListWatchingProgramsByUser :many
 SELECT
   p.id AS program_id,

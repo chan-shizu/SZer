@@ -18,3 +18,12 @@ export async function getLikedPrograms(): Promise<GetProgramsResponse> {
     throw err;
   }
 }
+
+export async function getPurchasedPrograms(): Promise<GetProgramsResponse> {
+  try {
+    return await backendFetchJson<GetProgramsResponse>("/me/purchased-programs", { method: "GET", cache: "no-store" });
+  } catch (err) {
+    console.error(`[API通信エラー] getPurchasedPrograms:`, { err });
+    throw err;
+  }
+}

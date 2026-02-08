@@ -46,6 +46,7 @@ func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	authenticated.DELETE("programs/:id/like", programsHandler.UnlikeProgram)
 	authenticated.GET("me/watching-programs", programsHandler.ListWatchingPrograms)
 	authenticated.GET("me/liked-programs", programsHandler.ListLikedPrograms)
+	authenticated.GET("me/purchased-programs", programsHandler.ListPurchasedPrograms)
 	authenticated.GET("me/points", usersHandler.GetPoints)
 	authenticated.POST("me/points/add", usersHandler.AddPoints)
 	authenticated.POST("/me/paypay/checkout", paypayHandler.PayPayCheckout)

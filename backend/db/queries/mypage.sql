@@ -65,3 +65,36 @@ GROUP BY
 ORDER BY lk.created_at DESC
 LIMIT COALESCE(sqlc.narg('limit')::int, 50)
 OFFSET COALESCE(sqlc.narg('offset')::int, 0);
+
+-- name: ListPurchasedProgramsByUser :many
+SELECT
+  p.id AS program_id,
+  p.title,
+  p.thumbnail_path,
+  p.view_count,
+  p.is_limited_release,
+  p.price,
+  COALESCE((SELECT COUNT(*) FROM likes l WHERE l.program_id = p.id), 0)::bigint AS like_count,
+  COALESCE(
+    jsonb_agg(DISTINCT jsonb_build_object(
+      'id', ct.id,
+      'name', ct.name
+    )) FILTER (WHERE ct.id IS NOT NULL),
+    '[]'::jsonb
+  ) AS category_tags
+FROM permitted_program_users ppu
+JOIN programs p ON p.id = ppu.program_id
+LEFT JOIN program_category_tags pct ON p.id = pct.program_id
+LEFT JOIN category_tags ct ON pct.tag_id = ct.id
+WHERE ppu.user_id = $1 AND p.is_public = true
+GROUP BY
+  p.id,
+  p.title,
+  p.thumbnail_path,
+  p.view_count,
+  p.is_limited_release,
+  p.price,
+  ppu.created_at
+ORDER BY ppu.created_at DESC
+LIMIT COALESCE(sqlc.narg('limit')::int, 50)
+OFFSET COALESCE(sqlc.narg('offset')::int, 0);

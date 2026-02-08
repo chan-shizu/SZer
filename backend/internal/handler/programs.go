@@ -332,3 +332,21 @@ func (h *ProgramsHandler) ListLikedPrograms(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"programs": programs})
 }
+
+func (h *ProgramsHandler) ListPurchasedPrograms(c *gin.Context) {
+	userID, err := middleware.UserIDFromContext(c)
+	if err != nil {
+		log.Printf("[ListPurchasedPrograms] 認証失敗: userID取得できず err=%v", err)
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	programs, err := h.programs.ListPurchasedPrograms(c.Request.Context(), userID)
+	if err != nil {
+		log.Printf("[ListPurchasedPrograms] サーバーエラー: 購入済みprogram一覧取得失敗 userID=%s, err=%v", userID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to list purchased programs"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"programs": programs})
+}

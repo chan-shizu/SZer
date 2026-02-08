@@ -1,15 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { getLikedPrograms, getWatchingPrograms } from "@/lib/api/mypage";
+import { getLikedPrograms, getPurchasedPrograms, getWatchingPrograms } from "@/lib/api/mypage";
 import { ApiError } from "@/lib/api/error";
 import { ProgramCard } from "@/app/programs/components/ProgramCard";
 import { BottomTabBar } from "@/components/BottomTabBar";
 
-type Tab = "watching" | "liked";
+type Tab = "watching" | "liked" | "purchased";
 
 function normalizeTab(v?: string): Tab {
-  return v === "liked" ? "liked" : "watching";
+  if (v === "liked") return "liked";
+  if (v === "purchased") return "purchased";
+  return "watching";
 }
 
 function TabLink({ href, label, selected }: { href: string; label: string; selected: boolean }) {
@@ -30,7 +32,12 @@ export default async function Page(props: { searchParams: Promise<{ tab?: string
   const searchParams = await props.searchParams;
   const tab = normalizeTab(searchParams.tab);
 
-  const response = tab === "liked" ? await getLikedPrograms() : await getWatchingPrograms();
+  const response =
+    tab === "liked"
+      ? await getLikedPrograms()
+      : tab === "purchased"
+        ? await getPurchasedPrograms()
+        : await getWatchingPrograms();
   const programs = response.programs;
 
   return (
@@ -43,6 +50,7 @@ export default async function Page(props: { searchParams: Promise<{ tab?: string
         <div className="flex gap-2 border-b border-muted">
           <TabLink href="/mypage?tab=watching" label="視聴中" selected={tab === "watching"} />
           <TabLink href="/mypage?tab=liked" label="いいね" selected={tab === "liked"} />
+          <TabLink href="/mypage?tab=purchased" label="購入済み" selected={tab === "purchased"} />
         </div>
       </div>
 

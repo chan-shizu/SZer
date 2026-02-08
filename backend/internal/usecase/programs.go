@@ -414,6 +414,38 @@ func (u *ProgramsUsecase) ListLikedPrograms(ctx context.Context, userID string) 
 	return results, nil
 }
 
+func (u *ProgramsUsecase) ListPurchasedPrograms(ctx context.Context, userID string) ([]ProgramListItem, error) {
+	rows, err := u.q.ListPurchasedProgramsByUser(ctx, db.ListPurchasedProgramsByUserParams{UserID: userID})
+	if err != nil {
+		return nil, err
+	}
+
+	results := make([]ProgramListItem, 0, len(rows))
+	for _, row := range rows {
+		categoryTagsJSON, err := normalizeJSONBytes(row.CategoryTags)
+		if err != nil {
+			return nil, err
+		}
+		var categoryTags []ProgramDetailsCategoryTag
+		if err := json.Unmarshal(categoryTagsJSON, &categoryTags); err != nil {
+			return nil, err
+		}
+
+		results = append(results, ProgramListItem{
+			ProgramID:        row.ProgramID,
+			Title:            row.Title,
+			ViewCount:        int64(row.ViewCount),
+			LikeCount:        row.LikeCount,
+			IsLimitedRelease: row.IsLimitedRelease,
+			Price:            row.Price,
+			ThumbnailUrl:     buildPublicFileURLPtr(nullStringPtr(row.ThumbnailPath)),
+			CategoryTags:     categoryTags,
+		})
+	}
+
+	return results, nil
+}
+
 // 視聴回数をインクリメントするメソッドを追加
 func (u *ProgramsUsecase) IncrementViewCount(ctx context.Context, programID int64) error {
 	return u.q.IncrementProgramViewCount(ctx, programID)

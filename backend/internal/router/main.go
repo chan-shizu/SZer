@@ -16,11 +16,14 @@ func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	usersUC := usecase.NewUsersUsecase(q)
 	paypayUC := usecase.NewPayPayUsecase(conn, q)
 
+	requestsUC := usecase.NewRequestsUsecase(q)
+
 	programsHandler := handler.NewProgramsHandler(programsUC)
 	usersHandler := handler.NewUsersHandler(usersUC)
 	paypayHandler := handler.NewPayPayHandler(paypayUC)
 	commentsHandler := handler.NewCommentsHandler(q)
 	paypayWebhookHandler := handler.NewPayPayWebhookHandler(conn, q)
+	requestsHandler := handler.NewRequestsHandler(requestsUC)
 
 	
 	// 認証不要のエンドポイント
@@ -36,6 +39,9 @@ func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	// コメントAPI（未ログインOK）
 	router.GET("/programs/:id/comments", middleware.OptionalAuth(), commentsHandler.ListComments)
 	router.POST("/programs/:id/comments", middleware.OptionalAuth(), commentsHandler.PostComment)
+
+	// リクエストAPI（未ログインOK）
+	router.POST("/requests", middleware.OptionalAuth(), requestsHandler.CreateRequest)
 
 	// マイページ系APIのみ認証必須
 	authenticated := router.Group("/")

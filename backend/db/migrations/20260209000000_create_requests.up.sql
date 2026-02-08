@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS requests (
+  id BIGSERIAL PRIMARY KEY,
+  user_id TEXT REFERENCES "user"(id) ON DELETE SET NULL,
+  content TEXT NOT NULL,
+  name TEXT NOT NULL,
+  contact TEXT NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

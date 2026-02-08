@@ -103,6 +103,16 @@ type ProgramPerformer struct {
 	PerformerID int64 `json:"performer_id"`
 }
 
+type Request struct {
+	ID        int64          `json:"id"`
+	UserID    sql.NullString `json:"user_id"`
+	Content   string         `json:"content"`
+	Name      string         `json:"name"`
+	Contact   string         `json:"contact"`
+	Note      string         `json:"note"`
+	CreatedAt time.Time      `json:"created_at"`
+}
+
 type Session struct {
 	ID        string         `json:"id"`
 	ExpiresAt time.Time      `json:"expiresAt"`

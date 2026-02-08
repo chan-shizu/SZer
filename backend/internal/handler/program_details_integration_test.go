@@ -27,9 +27,7 @@ func TestProgramDetails_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	dummyUsersUC := &usecase.UsersUsecase{}
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
@@ -118,9 +116,7 @@ func TestProgramDetails_WithTagsAndPerformers_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	dummyUsersUC := &usecase.UsersUsecase{}
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
@@ -160,9 +156,7 @@ func TestProgramDetails_InvalidID_Integration(t *testing.T) {
 	dbConn, q := setupTestDB(t)
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	dummyUsersUC := &usecase.UsersUsecase{}
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
@@ -183,9 +177,7 @@ func TestProgramDetails_NotFound_Integration(t *testing.T) {
 	dbConn, q := setupTestDB(t)
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	dummyUsersUC := &usecase.UsersUsecase{}
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
@@ -216,9 +208,7 @@ func TestProgramDetails_LimitedReleaseAndPrice_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	dummyUsersUC := &usecase.UsersUsecase{}
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 		r.GET("/programs/:id", h.ProgramDetails)
@@ -257,9 +247,7 @@ func TestProgramDetails_ViewCountIncrement_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	dummyUsersUC := &usecase.UsersUsecase{}
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.Use(MockOptionalAuth("")) // 未認証（user_idなし）
 	r.GET("/programs/:id", h.ProgramDetails)
@@ -308,9 +296,7 @@ func TestProgramDetails_LimitedReleasePermission_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	dummyUsersUC := &usecase.UsersUsecase{}
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.Use(MockOptionalAuth(userID)) // 認証ユーザーとしてuserIDをセット
 	r.GET("/programs/:id", h.ProgramDetails)

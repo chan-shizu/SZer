@@ -10,11 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type PayPayHandler struct {
+	paypay *usecase.PayPayUsecase
+}
+
+func NewPayPayHandler(paypay *usecase.PayPayUsecase) *PayPayHandler {
+	return &PayPayHandler{paypay: paypay}
+}
+
 type payPayCheckoutRequest struct {
 	AmountYen int32 `json:"amount_yen"`
 }
 
-func (h *Handler) PayPayCheckout(c *gin.Context) {
+func (h *PayPayHandler) PayPayCheckout(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -49,7 +57,7 @@ func (h *Handler) PayPayCheckout(c *gin.Context) {
 	})
 }
 
-func (h *Handler) PayPayGetPayment(c *gin.Context) {
+func (h *PayPayHandler) PayPayGetPayment(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})

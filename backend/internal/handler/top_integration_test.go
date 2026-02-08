@@ -24,9 +24,7 @@ func TestTop_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	dummyUsersUC := &usecase.UsersUsecase{} // ダミー
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, dummyUsersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.GET("/top", h.Top)
 

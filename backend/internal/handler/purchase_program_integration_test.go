@@ -12,19 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// テスト用ヘルパー: 認証済みユーザー付きルーターを作成
-func setupPurchaseRouter(t *testing.T, userID string) (*gin.Engine, *Handler) {
-	dbConn, q := setupTestDB(t)
-	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	usersUC := usecase.NewUsersUsecase(q)
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, usersUC, dummyPayPayUC)
-	r := gin.New()
-	r.Use(MockOptionalAuth(userID))
-	r.POST("/programs/:id/purchase", h.PurchaseProgram)
-	return r, h
-}
-
 func TestPurchaseProgram_Success_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	dbConn, q := setupTestDB(t)
@@ -46,9 +33,7 @@ func TestPurchaseProgram_Success_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	usersUC := usecase.NewUsersUsecase(q)
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, usersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
 	r.POST("/programs/:id/purchase", h.PurchaseProgram)
@@ -110,9 +95,7 @@ func TestPurchaseProgram_InsufficientPoints_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	usersUC := usecase.NewUsersUsecase(q)
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, usersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
 	r.POST("/programs/:id/purchase", h.PurchaseProgram)
@@ -163,9 +146,7 @@ func TestPurchaseProgram_AlreadyPurchased_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	usersUC := usecase.NewUsersUsecase(q)
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, usersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
 	r.POST("/programs/:id/purchase", h.PurchaseProgram)
@@ -211,9 +192,7 @@ func TestPurchaseProgram_NotPurchasable_FreeProgram_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	usersUC := usecase.NewUsersUsecase(q)
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, usersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
 	r.POST("/programs/:id/purchase", h.PurchaseProgram)
@@ -251,9 +230,7 @@ func TestPurchaseProgram_NotPurchasable_LimitedButFree_Integration(t *testing.T)
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	usersUC := usecase.NewUsersUsecase(q)
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, usersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
 	r.POST("/programs/:id/purchase", h.PurchaseProgram)
@@ -281,9 +258,7 @@ func TestPurchaseProgram_NotFound_Integration(t *testing.T) {
 	}
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	usersUC := usecase.NewUsersUsecase(q)
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, usersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
 	r.POST("/programs/:id/purchase", h.PurchaseProgram)
@@ -304,9 +279,7 @@ func TestPurchaseProgram_InvalidID_Integration(t *testing.T) {
 	dbConn, q := setupTestDB(t)
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	usersUC := usecase.NewUsersUsecase(q)
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, usersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth("some-user"))
 	r.POST("/programs/:id/purchase", h.PurchaseProgram)
@@ -327,9 +300,7 @@ func TestPurchaseProgram_Unauthorized_Integration(t *testing.T) {
 	dbConn, q := setupTestDB(t)
 
 	programsUC := usecase.NewProgramsUsecase(dbConn, q)
-	usersUC := usecase.NewUsersUsecase(q)
-	dummyPayPayUC := &usecase.PayPayUsecase{}
-	h := NewHandler(programsUC, usersUC, dummyPayPayUC)
+	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth("")) // 未認証
 	r.POST("/programs/:id/purchase", h.PurchaseProgram)

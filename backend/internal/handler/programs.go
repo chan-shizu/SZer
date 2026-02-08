@@ -14,10 +14,8 @@ import (
 )
 
 
-type Handler struct {
+type ProgramsHandler struct {
 	programs *usecase.ProgramsUsecase
-	users    *usecase.UsersUsecase
-	paypay   *usecase.PayPayUsecase
 }
 
 type upsertWatchHistoryRequest struct {
@@ -26,11 +24,11 @@ type upsertWatchHistoryRequest struct {
 	IsCompleted     bool  `json:"is_completed"`
 }
 
-func NewHandler(programs *usecase.ProgramsUsecase, users *usecase.UsersUsecase, paypay *usecase.PayPayUsecase) *Handler {
-	return &Handler{programs: programs, users: users, paypay: paypay}
+func NewProgramsHandler(programs *usecase.ProgramsUsecase) *ProgramsHandler {
+	return &ProgramsHandler{programs: programs}
 }
 
-func (h *Handler) ProgramDetails(c *gin.Context) {
+func (h *ProgramsHandler) ProgramDetails(c *gin.Context) {
 	userID, _ := middleware.UserIDFromContext(c)
 
 	idStr := c.Param("id")
@@ -86,7 +84,7 @@ func (h *Handler) ProgramDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-func (h *Handler) PurchaseProgram(c *gin.Context) {
+func (h *ProgramsHandler) PurchaseProgram(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {
 		log.Printf("[PurchaseProgram] 認証失敗: userID取得できず err=%v", err)
@@ -132,7 +130,7 @@ func (h *Handler) PurchaseProgram(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"points": points})
 }
 
-func (h *Handler) LikeProgram(c *gin.Context) {
+func (h *ProgramsHandler) LikeProgram(c *gin.Context) {
  	userID, err := middleware.UserIDFromContext(c)
  	if err != nil {
  		log.Printf("[LikeProgram] Unauthorized: userID取得失敗. err=%v", err)
@@ -165,7 +163,7 @@ func (h *Handler) LikeProgram(c *gin.Context) {
 	})
 }
 
-func (h *Handler) UnlikeProgram(c *gin.Context) {
+func (h *ProgramsHandler) UnlikeProgram(c *gin.Context) {
  	userID, err := middleware.UserIDFromContext(c)
  	if err != nil {
  		log.Printf("[UnlikeProgram] 認証失敗: userID取得できず err=%v", err)
@@ -199,7 +197,7 @@ func (h *Handler) UnlikeProgram(c *gin.Context) {
 	})
 }
 
-func (h *Handler) UpsertWatchHistory(c *gin.Context) {
+func (h *ProgramsHandler) UpsertWatchHistory(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil || userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
@@ -234,7 +232,7 @@ func (h *Handler) UpsertWatchHistory(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"watch_history": wh})
 }
 
-func (h *Handler) ListPrograms(c *gin.Context) {
+func (h *ProgramsHandler) ListPrograms(c *gin.Context) {
 	title := c.Query("title")
 	tagIDsStr := c.QueryArray("tag_ids")
 	tagIDs := make([]int64, 0, len(tagIDsStr))
@@ -260,7 +258,7 @@ func (h *Handler) ListPrograms(c *gin.Context) {
 	})
 }
 
-func (h *Handler) Top(c *gin.Context) {
+func (h *ProgramsHandler) Top(c *gin.Context) {
 	programs, err := h.programs.ListTopPrograms(c.Request.Context())
 	if err != nil {
  		log.Printf("[Top] サーバーエラー: トップprogram取得失敗 err=%v", err)
@@ -273,7 +271,7 @@ func (h *Handler) Top(c *gin.Context) {
 	})
 }
 
-func (h *Handler) TopLiked(c *gin.Context) {
+func (h *ProgramsHandler) TopLiked(c *gin.Context) {
 	programs, err := h.programs.ListTopLikedPrograms(c.Request.Context())
 	if err != nil {
  		log.Printf("[TopLiked] サーバーエラー: いいね多いprogram取得失敗 err=%v", err)
@@ -286,7 +284,7 @@ func (h *Handler) TopLiked(c *gin.Context) {
 	})
 }
 
-func (h *Handler) TopViewed(c *gin.Context) {
+func (h *ProgramsHandler) TopViewed(c *gin.Context) {
 	programs, err := h.programs.ListTopViewedPrograms(c.Request.Context())
 	if err != nil {
  		log.Printf("[TopViewed] サーバーエラー: 視聴多いprogram取得失敗 err=%v", err)
@@ -299,7 +297,7 @@ func (h *Handler) TopViewed(c *gin.Context) {
 	})
 }
 
-func (h *Handler) ListWatchingPrograms(c *gin.Context) {
+func (h *ProgramsHandler) ListWatchingPrograms(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {
  		log.Printf("[ListWatchingPrograms] 認証失敗: userID取得できず err=%v", err)
@@ -317,7 +315,7 @@ func (h *Handler) ListWatchingPrograms(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"programs": programs})
 }
 
-func (h *Handler) ListLikedPrograms(c *gin.Context) {
+func (h *ProgramsHandler) ListLikedPrograms(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {
  		log.Printf("[ListLikedPrograms] 認証失敗: userID取得できず err=%v", err)

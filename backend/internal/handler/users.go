@@ -10,11 +10,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type UsersHandler struct {
+	users *usecase.UsersUsecase
+}
+
+func NewUsersHandler(users *usecase.UsersUsecase) *UsersHandler {
+	return &UsersHandler{users: users}
+}
+
 type addPointsRequest struct {
 	Amount int32 `json:"amount"`
 }
 
-func (h *Handler) AddPoints(c *gin.Context) {
+func (h *UsersHandler) AddPoints(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {
  		log.Printf("[AddPoints] 認証失敗: userID取得できず err=%v", err)
@@ -51,7 +59,7 @@ func (h *Handler) AddPoints(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"points": points})
 }
 
-func (h *Handler) GetPoints(c *gin.Context) {
+func (h *UsersHandler) GetPoints(c *gin.Context) {
 	userID, err := middleware.UserIDFromContext(c)
 	if err != nil {
  		log.Printf("[GetPoints] 認証失敗: userID取得できず err=%v", err)

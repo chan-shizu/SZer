@@ -33,24 +33,24 @@ export default async function ProfilePage() {
         <h1 className="text-lg font-semibold text-foreground">アカウント情報</h1>
       </div>
 
-      <div className="space-y-3 px-4">
-        <div className="border-b border-muted pb-3">
-          <p className="text-xs text-muted-foreground">ユーザー名</p>
-          <p className="mt-1 text-sm text-foreground">{user.name}</p>
+      <div className="space-y-4 px-4">
+        <div className="border-b border-muted pb-4">
+          <p className="text-sm text-muted-foreground">ユーザー名</p>
+          <p className="mt-1 text-base text-foreground">{user.name}</p>
         </div>
 
-        <div className="border-b border-muted pb-3">
-          <p className="text-xs text-muted-foreground">メールアドレス</p>
-          <p className="mt-1 text-sm text-foreground">{user.email}</p>
+        <div className="border-b border-muted pb-4">
+          <p className="text-sm text-muted-foreground">メールアドレス</p>
+          <p className="mt-1 text-base text-foreground">{user.email}</p>
         </div>
 
-        <div className="pb-3">
-          <p className="text-xs text-muted-foreground">ポイント残高</p>
+        <div className="pb-4">
+          <p className="text-sm text-muted-foreground">ポイント残高</p>
           <div className="mt-1 flex items-center justify-between">
-            <p className="text-sm text-foreground">{points.toLocaleString()} pt</p>
+            <p className="text-lg font-semibold text-foreground">{points.toLocaleString()} pt</p>
             <Link
               href="/mypage/points"
-              className="flex items-center gap-1 rounded border border-muted px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-1 rounded bg-foreground px-3 py-1.5 text-xs font-medium text-background"
             >
               <Plus className="h-3 w-3" />
               チャージ

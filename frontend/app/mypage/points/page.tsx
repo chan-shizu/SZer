@@ -1,8 +1,9 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { ApiError } from "@/lib/api/error";
-import { getWatchingPrograms } from "@/lib/api/mypage";
-import { backendFetchJson } from "@/lib/api/server";
+import { getWatchingPrograms, getMyPoints } from "@/lib/api/mypage";
 
 import { PointsAddClient } from "./PointsAddClient";
 
@@ -19,14 +20,17 @@ export default async function Page() {
     throw err;
   }
 
-  const pointsRes = await backendFetchJson<{ points: number }>("/me/points", { method: "GET", cache: "no-store" });
+  const { points } = await getMyPoints();
 
   return (
     <div>
-      <div className="p-3">
-        <h1 className="text-lg font-semibold text-foreground">ポイント追加</h1>
+      <div className="flex items-center gap-2 p-4">
+        <Link href="/mypage/profile" className="text-foreground">
+          <ArrowLeft className="h-5 w-5" />
+        </Link>
+        <h1 className="text-lg font-semibold text-foreground">ポイントチャージ</h1>
       </div>
-      <PointsAddClient initialPoints={pointsRes.points} />
+      <PointsAddClient initialPoints={points} />
     </div>
   );
 }

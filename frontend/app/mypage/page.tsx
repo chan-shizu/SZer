@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { UserCircle } from "lucide-react";
 
 import { getLikedPrograms, getPurchasedPrograms, getWatchingPrograms } from "@/lib/api/mypage";
 import { ApiError } from "@/lib/api/error";
@@ -42,8 +43,11 @@ export default async function Page(props: { searchParams: Promise<{ tab?: string
 
   return (
     <div>
-      <div className="p-3">
+      <div className="flex items-center justify-between p-3">
         <h1 className="text-lg font-semibold text-foreground">マイページ</h1>
+        <Link href="/mypage/profile" className="text-muted-foreground hover:text-foreground">
+          <UserCircle className="h-6 w-6" />
+        </Link>
       </div>
 
       <div className="px-3">

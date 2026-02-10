@@ -36,8 +36,8 @@ export default function RequestForm() {
     return (
       <div className="text-center py-12">
         <p className="text-lg font-semibold mb-4">リクエストを送信しました！</p>
-        <p className="text-sm text-gray-500 mb-6">ご要望ありがとうございます。</p>
-        <button onClick={() => setSubmitted(false)} className="px-6 py-2 bg-black text-white rounded-lg text-sm">
+        <p className="text-sm text-muted-foreground mb-6">ご要望ありがとうございます。</p>
+        <button onClick={() => setSubmitted(false)} className="px-6 py-2 bg-foreground text-white rounded-lg text-sm">
           続けてリクエストする
         </button>
       </div>
@@ -52,7 +52,7 @@ export default function RequestForm() {
         </label>
         <textarea
           id="content"
-          className="w-full bg-gray-100 rounded-lg px-4 py-2 text-base min-h-[100px] resize-y"
+          className="w-full bg-subtle rounded-lg px-4 py-2 text-base min-h-[100px] resize-y"
           placeholder="見たい番組や出演者など..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -70,7 +70,7 @@ export default function RequestForm() {
         <input
           id="name"
           type="text"
-          className="w-full bg-gray-100 rounded-lg px-4 py-2 text-base"
+          className="w-full bg-subtle rounded-lg px-4 py-2 text-base"
           placeholder="お名前"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -88,7 +88,7 @@ export default function RequestForm() {
         <input
           id="contact"
           type="text"
-          className="w-full bg-gray-100 rounded-lg px-4 py-2 text-base"
+          className="w-full bg-subtle rounded-lg px-4 py-2 text-base"
           placeholder="インスタのDMで、example@example.com"
           value={contact}
           onChange={(e) => setContact(e.target.value)}
@@ -103,7 +103,7 @@ export default function RequestForm() {
         </label>
         <textarea
           id="note"
-          className="w-full bg-gray-100 rounded-lg px-4 py-2 text-base min-h-[60px] resize-y"
+          className="w-full bg-subtle rounded-lg px-4 py-2 text-base min-h-[60px] resize-y"
           placeholder="その他ご要望があれば..."
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -116,7 +116,7 @@ export default function RequestForm() {
 
       <button
         type="submit"
-        className="w-full py-3 bg-black text-white rounded-lg text-sm font-medium disabled:opacity-50 transition"
+        className="w-full py-3 bg-foreground text-white rounded-lg text-sm font-medium disabled:opacity-50 transition"
         disabled={loading || !content.trim() || !name.trim() || !contact.trim()}
       >
         {loading ? "送信中..." : "リクエストを送信"}

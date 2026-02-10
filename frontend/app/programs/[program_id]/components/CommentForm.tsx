@@ -33,7 +33,7 @@ export default function CommentForm({ programId }: Props) {
     <form onSubmit={handleSubmit} className="flex items-center gap-3 shadow p-2 align-middle">
       <input
         type="text"
-        className="flex-1 bg-gray-100 rounded px-4 text-base shadow-sm py-1"
+        className="flex-1 bg-subtle rounded px-4 text-base shadow-sm py-1"
         placeholder="コメントを入力..."
         value={content}
         onChange={(e) => setContent(e.target.value)}
@@ -53,7 +53,7 @@ export default function CommentForm({ programId }: Props) {
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="w-6 h-6 text-gray-700"
+          className="w-6 h-6 text-muted-foreground"
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-7.5-15-7.5v6l10 1.5-10 1.5v6z" />
         </svg>

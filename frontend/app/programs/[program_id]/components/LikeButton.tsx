@@ -51,8 +51,8 @@ export function LikeButton({ programId, initialLiked, initialLikeCount }: Props)
         aria-label={liked ? "いいね解除" : "いいね"}
         className="disabled:opacity-50 flex items-center gap-x-3"
       >
-        <ThumbsUp className={liked ? "h-5 w-5 fill-current text-gray-900" : "h-5 w-5 text-gray-900"} strokeWidth={2} />
-        <div className="text-sm text-gray-600">いいね数: {likeCount}</div>
+        <ThumbsUp className={liked ? "h-5 w-5 fill-current text-foreground" : "h-5 w-5 text-foreground"} strokeWidth={2} />
+        <div className="text-sm text-muted-foreground">いいね数: {likeCount}</div>
       </button>
 
       <AuthModal open={modalOpen} onClose={() => setModalOpen(false)} />

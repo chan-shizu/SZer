@@ -21,7 +21,7 @@ export default async function UserStatus() {
   }
 
   return (
-    <div className="text-sm text-zinc-700 dark:text-zinc-200">
+    <div className="text-sm text-muted-foreground">
       {userName ? <Link href="/mypage/profile">{userName}さま</Link> : <Link href="/login">未ログイン</Link>}
     </div>
   );

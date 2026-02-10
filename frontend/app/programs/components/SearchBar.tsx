@@ -58,7 +58,7 @@ export const SearchBar = ({}) => {
   }
 
   return (
-    <form action={handleSearch} className="w-full p-4 shadow-md bg-white rounded-lg space-y-3">
+    <form action={handleSearch} className="w-full p-4 shadow-md bg-background rounded-lg space-y-3">
       <div className="relative flex items-center w-full">
         {/* Input container for better absolute positioning if needed */}
         <input
@@ -66,13 +66,13 @@ export const SearchBar = ({}) => {
           name="title"
           type="text"
           onChange={handleChange}
-          className="w-full py-2 pl-6 pr-20 bg-gray-100 rounded text-black placeholder-gray-500 transition-all duration-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+          className="w-full py-2 pl-6 pr-20 bg-subtle rounded text-foreground placeholder-muted-foreground transition-all duration-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
           placeholder="番組名で検索"
           defaultValue={searchParams.get("title")?.toString()}
         />
         {isPending && (
           <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-            <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 border-input border-t-muted-foreground rounded-full animate-spin"></div>
           </div>
         )}
 
@@ -81,7 +81,7 @@ export const SearchBar = ({}) => {
             <button
               type="button"
               onClick={handleClear}
-              className="text-gray-400 hover:text-gray-600 focus:outline-none p-1 rounded-full hover:bg-gray-200 transition-colors"
+              className="text-muted-foreground hover:text-foreground focus:outline-none p-1 rounded-full hover:bg-subtle transition-colors"
               aria-label="検索キーワードをクリア"
             >
               <svg

@@ -12,7 +12,7 @@ export default function LogoAndName() {
       </div>
       <div className="pointer-events-auto flex items-center gap-3">
         <UserStatus />
-        <Link href="/mypage/profile" className="text-zinc-700 dark:text-zinc-200">
+        <Link href="/mypage/profile" className="text-muted-foreground">
           <UserCircle className="h-5 w-5" />
         </Link>
       </div>

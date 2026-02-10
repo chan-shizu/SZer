@@ -17,7 +17,7 @@ export const Performers = ({ performers }: Props) => {
         {performers.map((performer) => (
           <div
             key={performer.id}
-            className="flex gap-x-2 px-3 py-1 rounded-md border-2 border-gray-300 items-center text-gray-600"
+            className="flex gap-x-2 px-3 py-1 rounded-md border-2 border-input items-center text-muted-foreground"
           >
             {performer.image_url && <Image src={performer.image_url} alt="" width={28} height={28} />}
             <p className="font-semibold text-sm">{performer.full_name}</p>

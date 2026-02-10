@@ -23,11 +23,11 @@ export default async function TopPage() {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-3xl pb-12 px-4 bg-white dark:bg-black sm:px-6">
+    <div className="min-h-screen w-full max-w-3xl pb-12 px-4 bg-background dark:bg-black sm:px-6">
       <LogoAndName />
       <div className="space-y-10">
         <section>
-          <h1 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">新着番組</h1>
+          <h1 className="text-2xl font-extrabold text-foreground dark:text-zinc-100">新着番組</h1>
 
           <div className="mt-4 -mx-4 px-4 overflow-x-auto no-scrollbar">
             <div className="flex gap-4 snap-x snap-mandatory">
@@ -39,7 +39,7 @@ export default async function TopPage() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">いいね数上位</h2>
+          <h2 className="text-2xl font-extrabold text-foreground dark:text-zinc-100">いいね数上位</h2>
 
           <div className="mt-4 -mx-4 px-4 overflow-x-auto no-scrollbar">
             <div className="flex gap-4 snap-x snap-mandatory">
@@ -51,7 +51,7 @@ export default async function TopPage() {
         </section>
 
         <section>
-          <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100">視聴回数上位</h2>
+          <h2 className="text-2xl font-extrabold text-foreground dark:text-zinc-100">視聴回数上位</h2>
 
           <div className="mt-4 -mx-4 px-4 overflow-x-auto no-scrollbar">
             <div className="flex gap-4 snap-x snap-mandatory">

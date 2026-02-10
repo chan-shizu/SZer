@@ -13,13 +13,13 @@ export function AuthModal({ open, onClose }: AuthModalProps) {
         <div className="flex gap-4 justify-center">
           <a
             href="/login"
-            className="px-4 py-2 rounded bg-neutral-800 text-white font-semibold shadow hover:bg-neutral-700 transition-colors"
+            className="px-4 py-2 rounded bg-foreground text-white font-semibold shadow hover:bg-zinc-800 transition-colors"
           >
             ログイン
           </a>
           <a
             href="/signup"
-            className="px-4 py-2 rounded bg-orange-500 text-white font-semibold shadow hover:bg-orange-600 transition-colors"
+            className="px-4 py-2 rounded bg-brand text-white font-semibold shadow hover:bg-orange-700 transition-colors"
           >
             新規登録
           </a>

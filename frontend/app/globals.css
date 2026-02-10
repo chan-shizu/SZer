@@ -17,11 +17,18 @@
   --color-destructive: #ef4444; /* Red-500 */
   --color-destructive-foreground: #ffffff;
 
+  --color-brand: #ea580c; /* Orange-600 */
+  --color-brand-foreground: #ffffff;
+
   --color-background: #ffffff;
   --color-foreground: #020617; /* Slate-950 */
 
   --color-muted: #f1f5f9; /* Slate-100 */
   --color-muted-foreground: #64748b; /* Slate-500 */
+
+  --color-subtle: #f4f4f5; /* Zinc-100 薄い背景 */
+  --color-border: #e4e4e7; /* Zinc-200 ボーダー */
+  --color-input: #d4d4d8; /* Zinc-300 入力欄ボーダー */
 }
 
 .no-scrollbar {

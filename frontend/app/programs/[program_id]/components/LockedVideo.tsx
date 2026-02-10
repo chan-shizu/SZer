@@ -70,7 +70,7 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
         {/* 戻るボタン 左上 */}
         <button
           aria-label="前の画面に戻る"
-          className="absolute top-3 left-3 z-20 bg-white/80 rounded-full p-1 hover:bg-gray-100 border border-gray-200 shadow"
+          className="absolute top-3 left-3 z-20 bg-white/80 rounded-full p-1 hover:bg-subtle border border-border shadow"
           onClick={() => router.back()}
         >
           <svg
@@ -79,7 +79,7 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
             viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-gray-700"
+            className="h-6 w-6 text-muted-foreground"
           >
             <line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             <line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -110,7 +110,7 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
           <span className="text-white font-bold text-lg mb-1">この動画は購入者限定です</span>
           <span className="text-white/80 text-sm mb-4">購入すると視聴できるようになります</span>
           <button
-            className="bg-pink-600 text-white font-bold px-6 py-2.5 rounded-full shadow-lg hover:bg-pink-700 transition"
+            className="bg-brand text-white font-bold px-6 py-2.5 rounded-full shadow-lg hover:bg-orange-700 transition"
             onClick={openPurchaseModal}
           >
             購入する
@@ -121,20 +121,20 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
       <SimpleModal open={showModal} onClose={() => setShowModal(false)}>
         <div className="flex flex-col items-center gap-y-4">
           <h2 className="text-lg font-bold">番組を購入</h2>
-          <p className="text-sm text-gray-700 text-center">{title}</p>
-          <p className="text-2xl font-bold text-pink-600">
+          <p className="text-sm text-muted-foreground text-center">{title}</p>
+          <p className="text-2xl font-bold text-brand">
             {price.toLocaleString()} pt
           </p>
           <div className="w-full border-t pt-3">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">現在のポイント</span>
+              <span className="text-muted-foreground">現在のポイント</span>
               <span className={canPurchase ? "font-bold" : "font-bold text-red-600"}>
                 {currentPoints !== null ? `${currentPoints.toLocaleString()} pt` : "---"}
               </span>
             </div>
             {currentPoints !== null && (
               <div className="flex justify-between text-sm mt-1">
-                <span className="text-gray-500">購入後の残高</span>
+                <span className="text-muted-foreground">購入後の残高</span>
                 <span className={canPurchase ? "font-bold" : "font-bold text-red-600"}>
                   {canPurchase ? `${(currentPoints - price).toLocaleString()} pt` : "ポイント不足"}
                 </span>
@@ -145,7 +145,7 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
             <p className="text-sm text-red-600 text-center">{error}</p>
           )}
           <button
-            className="w-full bg-pink-600 text-white font-bold py-3 rounded-lg hover:bg-pink-700 transition disabled:opacity-50"
+            className="w-full bg-brand text-white font-bold py-3 rounded-lg hover:bg-orange-700 transition disabled:opacity-50"
             onClick={handlePurchase}
             disabled={isSubmitting || !canPurchase}
           >
@@ -154,13 +154,13 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
           {!canPurchase && currentPoints !== null && (
             <a
               href="/mypage/points"
-              className="text-sm text-pink-600 font-bold hover:underline"
+              className="text-sm text-brand font-bold hover:underline"
             >
               ポイントを追加する
             </a>
           )}
           <button
-            className="w-full text-sm text-gray-500 py-2"
+            className="w-full text-sm text-muted-foreground py-2"
             onClick={() => setShowModal(false)}
             disabled={isSubmitting}
           >

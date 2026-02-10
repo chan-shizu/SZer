@@ -41,9 +41,9 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center font-sans dark:bg-black">
-      <main className="w-full max-w-md bg-white px-10 py-12 dark:bg-black">
-        <h1 className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100">ログイン</h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+      <main className="w-full max-w-md bg-background px-10 py-12 dark:bg-black">
+        <h1 className="text-3xl font-extrabold text-foreground dark:text-zinc-100">ログイン</h1>
+        <p className="mt-2 text-sm text-muted-foreground dark:text-zinc-300">
           アカウントをお持ちでないですか？{" "}
           <Link className="text-blue-600" href="/signup">
             登録する
@@ -52,9 +52,9 @@ export default function LoginPage() {
 
         <form className="mt-8 space-y-4" onSubmit={onSubmit}>
           <label className="block">
-            <span className="text-sm text-zinc-700 dark:text-zinc-200">メールアドレス</span>
+            <span className="text-sm text-muted-foreground dark:text-zinc-200">メールアドレス</span>
             <input
-              className="mt-1 w-full rounded border border-zinc-300 bg-transparent px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+              className="mt-1 w-full rounded border border-input bg-transparent px-3 py-2 text-foreground dark:border-zinc-700 dark:text-zinc-100"
               type="email"
               autoComplete="email"
               value={email}
@@ -64,9 +64,9 @@ export default function LoginPage() {
           </label>
 
           <label className="block">
-            <span className="text-sm text-zinc-700 dark:text-zinc-200">パスワード</span>
+            <span className="text-sm text-muted-foreground dark:text-zinc-200">パスワード</span>
             <input
-              className="mt-1 w-full rounded border border-zinc-300 bg-transparent px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:text-zinc-100"
+              className="mt-1 w-full rounded border border-input bg-transparent px-3 py-2 text-foreground dark:border-zinc-700 dark:text-zinc-100"
               type="password"
               autoComplete="current-password"
               value={password}

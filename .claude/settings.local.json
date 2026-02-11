@@ -4,7 +4,11 @@
       "Bash(grep:*)",
       "Bash(docker compose exec backend go test:*)",
       "Bash(make migrate-up:*)",
-      "Bash(docker compose exec:*)"
+      "Bash(docker compose exec:*)",
+      "Bash(find:*)",
+      "Bash(del \"c:\\\\Users\\\\bubbl\\\\Documents\\\\development\\\\SZer\\\\backend\\\\internal\\\\usecase\\\\users.go\")",
+      "Bash(docker ps:*)",
+      "Bash(docker compose:*)"
     ]
   }
 }

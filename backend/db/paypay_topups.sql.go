@@ -16,25 +16,33 @@ INSERT INTO paypay_topups (
   user_id,
   merchant_payment_id,
   amount_yen,
-  status
+  status,
+  program_id
 ) VALUES (
   $1,
   $2,
   $3,
-  'CREATED'
+  'CREATED',
+  $4
 )
-RETURNING id, user_id, merchant_payment_id, amount_yen, status, paypay_code_id, paypay_payment_id, created_at, updated_at, credited_at
+RETURNING id, user_id, merchant_payment_id, amount_yen, status, paypay_code_id, paypay_payment_id, created_at, updated_at, credited_at, program_id
 `
 
 type CreatePayPayTopupParams struct {
-	UserID            string `json:"user_id"`
-	MerchantPaymentID string `json:"merchant_payment_id"`
-	AmountYen         int32  `json:"amount_yen"`
+	UserID            string        `json:"user_id"`
+	MerchantPaymentID string        `json:"merchant_payment_id"`
+	AmountYen         int32         `json:"amount_yen"`
+	ProgramID         sql.NullInt64 `json:"program_id"`
 }
 
-// PayPay topups (user purchases points via PayPay)
+// PayPay topups (user purchases programs via PayPay)
 func (q *Queries) CreatePayPayTopup(ctx context.Context, arg CreatePayPayTopupParams) (PaypayTopup, error) {
-	row := q.db.QueryRowContext(ctx, createPayPayTopup, arg.UserID, arg.MerchantPaymentID, arg.AmountYen)
+	row := q.db.QueryRowContext(ctx, createPayPayTopup,
+		arg.UserID,
+		arg.MerchantPaymentID,
+		arg.AmountYen,
+		arg.ProgramID,
+	)
 	var i PaypayTopup
 	err := row.Scan(
 		&i.ID,
@@ -47,13 +55,14 @@ func (q *Queries) CreatePayPayTopup(ctx context.Context, arg CreatePayPayTopupPa
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CreditedAt,
+		&i.ProgramID,
 	)
 	return i, err
 }
 
 const getPayPayTopupByMerchantPaymentIDForUpdate = `-- name: GetPayPayTopupByMerchantPaymentIDForUpdate :one
 
-SELECT id, user_id, merchant_payment_id, amount_yen, status, paypay_code_id, paypay_payment_id, created_at, updated_at, credited_at
+SELECT id, user_id, merchant_payment_id, amount_yen, status, paypay_code_id, paypay_payment_id, created_at, updated_at, credited_at, program_id
 FROM paypay_topups
 WHERE merchant_payment_id = $1
 FOR UPDATE
@@ -74,12 +83,13 @@ func (q *Queries) GetPayPayTopupByMerchantPaymentIDForUpdate(ctx context.Context
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CreditedAt,
+		&i.ProgramID,
 	)
 	return i, err
 }
 
 const getPayPayTopupForUpdate = `-- name: GetPayPayTopupForUpdate :one
-SELECT id, user_id, merchant_payment_id, amount_yen, status, paypay_code_id, paypay_payment_id, created_at, updated_at, credited_at
+SELECT id, user_id, merchant_payment_id, amount_yen, status, paypay_code_id, paypay_payment_id, created_at, updated_at, credited_at, program_id
 FROM paypay_topups
 WHERE user_id = $1
   AND merchant_payment_id = $2
@@ -105,6 +115,7 @@ func (q *Queries) GetPayPayTopupForUpdate(ctx context.Context, arg GetPayPayTopu
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.CreditedAt,
+		&i.ProgramID,
 	)
 	return i, err
 }

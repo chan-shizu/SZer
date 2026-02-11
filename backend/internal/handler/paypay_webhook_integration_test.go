@@ -23,13 +23,21 @@ func TestPayPayWebhookHandler_Integration(t *testing.T) {
 	dbConn, q := setupTestDB(t)
 
 	// テスト用ユーザーをinsert
-	_, err := dbConn.Exec(`INSERT INTO "user" (id, name, email, "emailVerified", points, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, now(), now()) ON CONFLICT (id) DO NOTHING`, "integration-user-id", "integration-user", "integration@example.com", true, 0)
+	_, err := dbConn.Exec(`INSERT INTO "user" (id, name, email, "emailVerified", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, now(), now()) ON CONFLICT (id) DO NOTHING`, "integration-user-id", "integration-user", "integration@example.com", true)
 	if err != nil {
 		t.Fatalf("failed to insert test user: %v", err)
 	}
 
+	// テスト用番組をinsert
+	var programID int64
+	err = dbConn.QueryRow(`INSERT INTO programs (title, video_path, is_limited_release, price) VALUES ($1, $2, $3, $4) RETURNING id`,
+		"webhook-test-program", "/video/webhook.mp4", true, 100).Scan(&programID)
+	if err != nil {
+		t.Fatalf("failed to insert test program: %v", err)
+	}
+
 	// テスト用topupをinsert
-	_, err = dbConn.Exec(`INSERT INTO paypay_topups (user_id, merchant_payment_id, amount_yen, status, created_at, updated_at) VALUES ($1, $2, $3, $4, now(), now()) ON CONFLICT (merchant_payment_id) DO NOTHING`, "integration-user-id", "integration-merchant-id", 100, "CREATED")
+	_, err = dbConn.Exec(`INSERT INTO paypay_topups (user_id, merchant_payment_id, amount_yen, status, program_id, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, now(), now()) ON CONFLICT (merchant_payment_id) DO NOTHING`, "integration-user-id", "integration-merchant-id", 100, "CREATED", programID)
 	if err != nil {
 		t.Fatalf("failed to insert test topup: %v", err)
 	}
@@ -56,7 +64,7 @@ func TestPayPayWebhookHandler_Integration(t *testing.T) {
 		t.Errorf("expected 200, got %d, body: %s", w.Code, w.Body.String())
 	}
 
-	// DBの状態を検証（例: topupのstatus, userのpointsなど）
+	// DBの状態を検証: topupのstatus
 	topup, err := q.GetPayPayTopupForUpdate(req.Context(), db.GetPayPayTopupForUpdateParams{
 		UserID:            "integration-user-id",
 		MerchantPaymentID: "integration-merchant-id",
@@ -68,13 +76,17 @@ func TestPayPayWebhookHandler_Integration(t *testing.T) {
 		t.Errorf("expected status COMPLETED, got %s", topup.Status)
 	}
 
-	// ユーザーのポイントも確認
-	points, err := q.GetUserPoints(req.Context(), "integration-user-id")
+	// 閲覧権限が付与されていることを確認
+	var permitted bool
+	err = dbConn.QueryRow(
+		`SELECT EXISTS(SELECT 1 FROM permitted_program_users WHERE user_id = $1 AND program_id = $2)`,
+		"integration-user-id", programID,
+	).Scan(&permitted)
 	if err != nil {
-		t.Fatalf("failed to get user points: %v", err)
+		t.Fatalf("failed to query permitted_program_users: %v", err)
 	}
-	if points != 100 {
-		t.Errorf("expected points == 100, got %d", points)
+	if !permitted {
+		t.Errorf("expected user to have viewing permission for program %d", programID)
 	}
 }
 
@@ -83,7 +95,7 @@ func TestPayPayWebhookHandler_ForbiddenIP(t *testing.T) {
 	os.Setenv("PAYPAY_WEBHOOK_SECRET", "testsecret")
 
 	dbConn, q := setupTestDB(t)
-	_, err := dbConn.Exec(`INSERT INTO "user" (id, name, email, "emailVerified", points, "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, now(), now()) ON CONFLICT (id) DO NOTHING`, "forbidden-user-id", "forbidden-user", "forbidden@example.com", true, 0)
+	_, err := dbConn.Exec(`INSERT INTO "user" (id, name, email, "emailVerified", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, now(), now()) ON CONFLICT (id) DO NOTHING`, "forbidden-user-id", "forbidden-user", "forbidden@example.com", true)
 	if err != nil {
 		t.Fatalf("failed to insert test user: %v", err)
 	}

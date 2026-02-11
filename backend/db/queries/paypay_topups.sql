@@ -1,16 +1,18 @@
--- PayPay topups (user purchases points via PayPay)
+-- PayPay topups (user purchases programs via PayPay)
 
 -- name: CreatePayPayTopup :one
 INSERT INTO paypay_topups (
   user_id,
   merchant_payment_id,
   amount_yen,
-  status
+  status,
+  program_id
 ) VALUES (
   $1,
   $2,
   $3,
-  'CREATED'
+  'CREATED',
+  $4
 )
 RETURNING *;
 

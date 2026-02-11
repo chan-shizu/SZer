@@ -6,16 +6,16 @@ export type PayPayCheckoutResponse = {
 
 export type PayPayConfirmResponse = {
   status: string;
-  credited: boolean;
-  points: number;
+  granted: boolean;
+  program_id: number;
 };
 
-export async function createPayPayCheckout(amountYen: 100 | 500 | 1000): Promise<PayPayCheckoutResponse> {
+export async function createPayPayCheckout(programId: number): Promise<PayPayCheckoutResponse> {
   const res = await fetch("/api/me/paypay/checkout", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount_yen: amountYen }),
+    body: JSON.stringify({ program_id: programId }),
   });
 
   if (!res.ok) {

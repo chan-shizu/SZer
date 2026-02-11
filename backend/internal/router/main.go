@@ -12,14 +12,12 @@ import (
 
 func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	router := gin.Default()
-	programsUC := usecase.NewProgramsUsecase(conn, q)
-	usersUC := usecase.NewUsersUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q)
 	paypayUC := usecase.NewPayPayUsecase(conn, q)
 
 	requestsUC := usecase.NewRequestsUsecase(q)
 
 	programsHandler := handler.NewProgramsHandler(programsUC)
-	usersHandler := handler.NewUsersHandler(usersUC)
 	paypayHandler := handler.NewPayPayHandler(paypayUC)
 	commentsHandler := handler.NewCommentsHandler(q)
 	paypayWebhookHandler := handler.NewPayPayWebhookHandler(conn, q)
@@ -47,14 +45,11 @@ func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	authenticated := router.Group("/")
 	authenticated.Use(middleware.RequireAuth())
 	authenticated.POST("watch-histories", programsHandler.UpsertWatchHistory)
-	authenticated.POST("programs/:id/purchase", programsHandler.PurchaseProgram)
 	authenticated.POST("programs/:id/like", programsHandler.LikeProgram)
 	authenticated.DELETE("programs/:id/like", programsHandler.UnlikeProgram)
 	authenticated.GET("me/watching-programs", programsHandler.ListWatchingPrograms)
 	authenticated.GET("me/liked-programs", programsHandler.ListLikedPrograms)
 	authenticated.GET("me/purchased-programs", programsHandler.ListPurchasedPrograms)
-	authenticated.GET("me/points", usersHandler.GetPoints)
-	authenticated.POST("me/points/add", usersHandler.AddPoints)
 	authenticated.POST("/me/paypay/checkout", paypayHandler.PayPayCheckout)
 	authenticated.GET("/me/paypay/payments/:merchantPaymentId", paypayHandler.PayPayGetPayment)
 

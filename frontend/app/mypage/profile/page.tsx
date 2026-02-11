@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { headers as nextHeaders } from "next/headers";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { auth } from "@/lib/auth/auth";
-import { getMyPoints } from "@/lib/api/mypage";
 import { BottomTabBar } from "@/components/BottomTabBar";
 
 export default async function ProfilePage() {
@@ -19,8 +18,6 @@ export default async function ProfilePage() {
   if (!session?.user) {
     redirect("/login");
   }
-
-  const { points } = await getMyPoints();
 
   const user = session.user;
 
@@ -39,23 +36,9 @@ export default async function ProfilePage() {
           <p className="mt-1 text-base text-foreground">{user.name}</p>
         </div>
 
-        <div className="border-b border-muted pb-4">
+        <div className="pb-4">
           <p className="text-sm text-muted-foreground">メールアドレス</p>
           <p className="mt-1 text-base text-foreground">{user.email}</p>
-        </div>
-
-        <div className="pb-4">
-          <p className="text-sm text-muted-foreground">ポイント残高</p>
-          <div className="mt-1 flex items-center justify-between">
-            <p className="text-lg font-semibold text-foreground">{points.toLocaleString()} pt</p>
-            <Link
-              href="/mypage/points"
-              className="flex items-center gap-1 rounded bg-foreground px-3 py-1.5 text-xs font-medium text-background"
-            >
-              <Plus className="h-3 w-3" />
-              チャージ
-            </Link>
-          </div>
         </div>
       </div>
 

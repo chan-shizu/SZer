@@ -12,13 +12,14 @@ import (
 
 var ErrPayPayNotConfigured = errors.New("paypay not configured")
 var ErrPayPayTopupNotFound = errors.New("paypay topup not found")
+var ErrNotPurchasable = errors.New("program is not purchasable")
+var ErrAlreadyPurchased = errors.New("already purchased")
 
 type PayPayUsecase struct {
 	conn    *sql.DB
 	q       *db.Queries
 	client  *paypay.Client
 	cfgErr  error
-	baseURL string
 }
 
 func NewPayPayUsecase(conn *sql.DB, q *db.Queries) *PayPayUsecase {
@@ -36,46 +37,63 @@ type PayPayCheckoutResult struct {
 	Deeplink          string
 }
 
-func (p *PayPayUsecase) Checkout(ctx context.Context, userID string, amountYen int32, redirectBaseURL string) (PayPayCheckoutResult, error) {
+func (p *PayPayUsecase) Checkout(ctx context.Context, userID string, programID int64, redirectBaseURL string) (PayPayCheckoutResult, error) {
 	if p.client == nil {
 		return PayPayCheckoutResult{}, fmt.Errorf("%w: %v", ErrPayPayNotConfigured, p.cfgErr)
 	}
-	if amountYen <= 0 {
-		return PayPayCheckoutResult{}, ErrInvalidPointsAmount
-	}
-	
-	// UIをシンプルにするため、当面は既存と同じ金額に制限
-	switch amountYen {
-	case 100, 500, 1000:
-	default:
-		return PayPayCheckoutResult{}, ErrInvalidPointsAmount
-	}
-	
-	merchantPaymentID, err := paypay.RandomMerchantPaymentID()
+
+	// 番組情報を取得
+	program, err := p.q.GetProgramForPurchase(ctx, programID)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return PayPayCheckoutResult{}, ErrProgramNotFound
+		}
 		return PayPayCheckoutResult{}, err
 	}
-	
-	_, err = p.q.CreatePayPayTopup(ctx, db.CreatePayPayTopupParams{
-		UserID:            userID,
-		MerchantPaymentID: merchantPaymentID,
-		AmountYen:         amountYen,
+
+	// 購入可能かチェック
+	if !program.IsLimitedRelease || program.Price <= 0 {
+		return PayPayCheckoutResult{}, ErrNotPurchasable
+	}
+
+	// 既に購入済みかチェック
+	permitted, err := p.q.IsUserPermittedForProgram(ctx, db.IsUserPermittedForProgramParams{
+		UserID:    userID,
+		ProgramID: programID,
 	})
 	if err != nil {
 		return PayPayCheckoutResult{}, err
 	}
-	
-	redirectURL := fmt.Sprintf("%s/mypage/points/paypay/return?merchantPaymentId=%s", redirectBaseURL, merchantPaymentID)
+	if permitted {
+		return PayPayCheckoutResult{}, ErrAlreadyPurchased
+	}
+
+	merchantPaymentID, err := paypay.RandomMerchantPaymentID()
+	if err != nil {
+		return PayPayCheckoutResult{}, err
+	}
+
+	_, err = p.q.CreatePayPayTopup(ctx, db.CreatePayPayTopupParams{
+		UserID:            userID,
+		MerchantPaymentID: merchantPaymentID,
+		AmountYen:         program.Price,
+		ProgramID:         sql.NullInt64{Int64: programID, Valid: true},
+	})
+	if err != nil {
+		return PayPayCheckoutResult{}, err
+	}
+
+	redirectURL := fmt.Sprintf("%s/programs/%d/paypay/return?merchantPaymentId=%s", redirectBaseURL, programID, merchantPaymentID)
 
 	var req paypay.CreateCodeRequest
 	req.MerchantPaymentID = merchantPaymentID
-	req.Amount.Amount = amountYen
+	req.Amount.Amount = program.Price
 	req.Amount.Currency = "JPY"
-	req.OrderDescription = "SZer points"
+	req.OrderDescription = "SZer program purchase"
 	req.CodeType = "ORDER_QR"
 	req.RedirectURL = redirectURL
 	req.RedirectType = "WEB_LINK"
-	
+
 	resp, err := p.client.CreateCode(ctx, req)
 	if err != nil {
 		_ = p.q.UpdatePayPayTopupStatus(ctx, db.UpdatePayPayTopupStatusParams{
@@ -104,12 +122,12 @@ func (p *PayPayUsecase) Checkout(ctx context.Context, userID string, amountYen i
 }
 
 type PayPayConfirmResult struct {
-	Status  string
-	Points  int32
-	Credited bool
+	Status    string
+	ProgramID int64
+	Granted   bool
 }
 
-func (p *PayPayUsecase) ConfirmAndCredit(ctx context.Context, userID, merchantPaymentID string) (PayPayConfirmResult, error) {
+func (p *PayPayUsecase) ConfirmAndGrant(ctx context.Context, userID, merchantPaymentID string) (PayPayConfirmResult, error) {
 	if p.client == nil {
 		return PayPayConfirmResult{}, fmt.Errorf("%w: %v", ErrPayPayNotConfigured, p.cfgErr)
 	}
@@ -144,7 +162,7 @@ func (p *PayPayUsecase) ConfirmAndCredit(ctx context.Context, userID, merchantPa
 		return PayPayConfirmResult{}, err
 	}
 
-	// まずステータスだけ更新（決済未完でも追跡できるように）
+	// ステータス更新
 	var paypayPaymentID sql.NullString
 	if paymentID != "" {
 		paypayPaymentID = sql.NullString{String: paymentID, Valid: true}
@@ -156,10 +174,13 @@ func (p *PayPayUsecase) ConfirmAndCredit(ctx context.Context, userID, merchantPa
 		PaypayPaymentID:   paypayPaymentID,
 	})
 
-	credited := false
-	points := int32(0)
+	granted := false
+	programID := int64(0)
+	if topup.ProgramID.Valid {
+		programID = topup.ProgramID.Int64
+	}
 
-	if status == "COMPLETED" {
+	if status == "COMPLETED" && topup.ProgramID.Valid {
 		affected, err := qtx.MarkPayPayTopupCredited(ctx, db.MarkPayPayTopupCreditedParams{
 			UserID:            userID,
 			MerchantPaymentID: merchantPaymentID,
@@ -170,22 +191,15 @@ func (p *PayPayUsecase) ConfirmAndCredit(ctx context.Context, userID, merchantPa
 		}
 
 		if affected == 1 {
-			credited = true
-			points, err = qtx.AddPointsToUser(ctx, db.AddPointsToUserParams{ID: userID, Points: topup.AmountYen})
+			// 閲覧権限を付与
+			err = qtx.AddPermittedProgramUser(ctx, db.AddPermittedProgramUserParams{
+				UserID:    userID,
+				ProgramID: topup.ProgramID.Int64,
+			})
 			if err != nil {
 				return PayPayConfirmResult{}, err
 			}
-		} else {
-			// すでに付与済み
-			points, err = qtx.GetUserPoints(ctx, userID)
-			if err != nil {
-				return PayPayConfirmResult{}, err
-			}
-		}
-	} else {
-		points, err = qtx.GetUserPoints(ctx, userID)
-		if err != nil {
-			return PayPayConfirmResult{}, err
+			granted = true
 		}
 	}
 
@@ -193,5 +207,5 @@ func (p *PayPayUsecase) ConfirmAndCredit(ctx context.Context, userID, merchantPa
 		return PayPayConfirmResult{}, err
 	}
 
-	return PayPayConfirmResult{Status: status, Points: points, Credited: credited}, nil
+	return PayPayConfirmResult{Status: status, ProgramID: programID, Granted: granted}, nil
 }

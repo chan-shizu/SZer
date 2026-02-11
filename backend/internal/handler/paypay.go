@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -19,7 +20,7 @@ func NewPayPayHandler(paypay *usecase.PayPayUsecase) *PayPayHandler {
 }
 
 type payPayCheckoutRequest struct {
-	AmountYen int32 `json:"amount_yen"`
+	ProgramID int64 `json:"program_id"`
 }
 
 func (h *PayPayHandler) PayPayCheckout(c *gin.Context) {
@@ -37,12 +38,25 @@ func (h *PayPayHandler) PayPayCheckout(c *gin.Context) {
 		return
 	}
 
+	if req.ProgramID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "program_id is required"})
+		return
+	}
+
 	redirectBase := strings.TrimRight(middleware.FrontendBaseURL(), "/")
 
-	res, err := h.paypay.Checkout(c.Request.Context(), userID, req.AmountYen, redirectBase)
+	res, err := h.paypay.Checkout(c.Request.Context(), userID, req.ProgramID, redirectBase)
 	if err != nil {
-		if err == usecase.ErrInvalidPointsAmount {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid amount"})
+		if errors.Is(err, usecase.ErrProgramNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "program not found"})
+			return
+		}
+		if errors.Is(err, usecase.ErrNotPurchasable) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "program is not purchasable"})
+			return
+		}
+		if errors.Is(err, usecase.ErrAlreadyPurchased) {
+			c.JSON(http.StatusConflict, gin.H{"error": "already purchased"})
 			return
 		}
 		println(err.Error())
@@ -52,8 +66,8 @@ func (h *PayPayHandler) PayPayCheckout(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"merchant_payment_id": res.MerchantPaymentID,
-		"url":               res.URL,
-		"deeplink":          res.Deeplink,
+		"url":                 res.URL,
+		"deeplink":            res.Deeplink,
 	})
 }
 
@@ -65,9 +79,9 @@ func (h *PayPayHandler) PayPayGetPayment(c *gin.Context) {
 	}
 
 	merchantPaymentID := strings.TrimSpace(c.Param("merchantPaymentId"))
-	result, err := h.paypay.ConfirmAndCredit(c.Request.Context(), userID, merchantPaymentID)
+	result, err := h.paypay.ConfirmAndGrant(c.Request.Context(), userID, merchantPaymentID)
 	if err != nil {
-		if err == usecase.ErrPayPayTopupNotFound {
+		if errors.Is(err, usecase.ErrPayPayTopupNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 			return
 		}
@@ -76,8 +90,8 @@ func (h *PayPayHandler) PayPayGetPayment(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":   result.Status,
-		"credited": result.Credited,
-		"points":   result.Points,
+		"status":     result.Status,
+		"granted":    result.Granted,
+		"program_id": result.ProgramID,
 	})
 }

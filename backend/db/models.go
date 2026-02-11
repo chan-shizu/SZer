@@ -59,6 +59,7 @@ type PaypayTopup struct {
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         time.Time      `json:"updated_at"`
 	CreditedAt        sql.NullTime   `json:"credited_at"`
+	ProgramID         sql.NullInt64  `json:"program_id"`
 }
 
 type Performer struct {
@@ -130,7 +131,6 @@ type User struct {
 	Email         string         `json:"email"`
 	EmailVerified bool           `json:"emailVerified"`
 	Image         sql.NullString `json:"image"`
-	Points        int32          `json:"points"`
 	CreatedAt     time.Time      `json:"createdAt"`
 	UpdatedAt     time.Time      `json:"updatedAt"`
 }

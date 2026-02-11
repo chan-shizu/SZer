@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { SimpleModal } from "@/components/SimpleModal";
 import { AuthModal } from "@/components/AuthModal";
 import { authClient } from "@/lib/auth/auth-client";
-import { purchaseProgram } from "@/lib/api/purchase";
-import { getPoints } from "@/lib/api/points";
+import { createPayPayCheckout } from "@/lib/api/paypay";
 
 type Props = {
   thumbnailUrl: string | null;
@@ -21,9 +20,6 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [currentPoints, setCurrentPoints] = useState<number | null>(null);
-
-  const canPurchase = currentPoints !== null && currentPoints >= price;
 
   const openPurchaseModal = async () => {
     const { data: session } = await authClient.getSession();
@@ -32,12 +28,6 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
       return;
     }
     setError("");
-    try {
-      const res = await getPoints();
-      setCurrentPoints(res.points);
-    } catch {
-      setCurrentPoints(null);
-    }
     setShowModal(true);
   };
 
@@ -45,21 +35,20 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
     setIsSubmitting(true);
     setError("");
     try {
-      const res = await purchaseProgram(programId);
-      setCurrentPoints(res.points);
-      setShowModal(false);
-      router.refresh();
+      const res = await createPayPayCheckout(programId);
+      const url = res.url || res.deeplink;
+      if (!url) {
+        throw new Error("PayPay checkout URL is missing");
+      }
+      window.location.href = url;
     } catch (e) {
       const msg = e instanceof Error ? e.message : "";
-      if (msg.includes("insufficient points")) {
-        setError("ポイントが不足しています。マイページからポイントを追加してください。");
-      } else if (msg.includes("already purchased")) {
+      if (msg.includes("already purchased")) {
         setShowModal(false);
         router.refresh();
       } else {
-        setError("購入に失敗しました。もう一度お試しください。");
+        setError("決済の開始に失敗しました。もう一度お試しください。");
       }
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -123,42 +112,18 @@ export const LockedVideo = ({ thumbnailUrl, title, price, programId }: Props) =>
           <h2 className="text-lg font-bold">番組を購入</h2>
           <p className="text-sm text-muted-foreground text-center">{title}</p>
           <p className="text-2xl font-bold text-brand">
-            {price.toLocaleString()} pt
+            ¥{price.toLocaleString()}（税込）
           </p>
-          <div className="w-full border-t pt-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">現在のポイント</span>
-              <span className={canPurchase ? "font-bold" : "font-bold text-red-600"}>
-                {currentPoints !== null ? `${currentPoints.toLocaleString()} pt` : "---"}
-              </span>
-            </div>
-            {currentPoints !== null && (
-              <div className="flex justify-between text-sm mt-1">
-                <span className="text-muted-foreground">購入後の残高</span>
-                <span className={canPurchase ? "font-bold" : "font-bold text-red-600"}>
-                  {canPurchase ? `${(currentPoints - price).toLocaleString()} pt` : "ポイント不足"}
-                </span>
-              </div>
-            )}
-          </div>
           {error && (
             <p className="text-sm text-red-600 text-center">{error}</p>
           )}
           <button
             className="w-full bg-brand text-white font-bold py-3 rounded-lg hover:bg-orange-700 transition disabled:opacity-50"
             onClick={handlePurchase}
-            disabled={isSubmitting || !canPurchase}
+            disabled={isSubmitting}
           >
-            {isSubmitting ? "処理中..." : "購入を確定する"}
+            {isSubmitting ? "処理中..." : "PayPayで支払う"}
           </button>
-          {!canPurchase && currentPoints !== null && (
-            <a
-              href="/mypage/points"
-              className="text-sm text-brand font-bold hover:underline"
-            >
-              ポイントを追加する
-            </a>
-          )}
           <button
             className="w-full text-sm text-muted-foreground py-2"
             onClick={() => setShowModal(false)}

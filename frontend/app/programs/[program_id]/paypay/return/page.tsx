@@ -7,9 +7,15 @@ import { backendFetchJson } from "@/lib/api/server";
 
 export const dynamic = "force-dynamic";
 
-export default async function Page({ searchParams }: { searchParams: { merchantPaymentId?: string | string[] } }) {
+type Props = {
+  params: Promise<{ program_id: string }>;
+  searchParams: Promise<{ merchantPaymentId?: string | string[] }>;
+};
+
+export default async function Page({ params, searchParams }: Props) {
+  const { program_id } = await params;
+
   try {
-    // auth必須要件のため、軽いAPI呼び出しで未ログインを弾く
     await getWatchingPrograms();
   } catch (err) {
     if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
@@ -18,36 +24,42 @@ export default async function Page({ searchParams }: { searchParams: { merchantP
     throw err;
   }
 
-  const merchantPaymentIdRaw = searchParams.merchantPaymentId;
+  const resolvedSearchParams = await searchParams;
+  const merchantPaymentIdRaw = resolvedSearchParams.merchantPaymentId;
   const merchantPaymentId = Array.isArray(merchantPaymentIdRaw) ? merchantPaymentIdRaw[0] : merchantPaymentIdRaw;
 
   if (!merchantPaymentId) {
     return (
       <div className="space-y-3 p-3">
         <h1 className="text-lg font-semibold text-foreground">PayPay決済</h1>
-        <div className="text-sm text-muted-foreground">merchantPaymentId が見つからなかったよ</div>
-        <Link className="text-sm text-foreground underline" href="/mypage/points">
-          ポイント画面に戻る
+        <div className="text-sm text-muted-foreground">merchantPaymentId が見つかりませんでした</div>
+        <Link className="text-sm text-foreground underline" href={`/programs/${program_id}`}>
+          番組ページに戻る
         </Link>
       </div>
     );
   }
 
-  const result = await backendFetchJson<{ status: string; credited: boolean; points: number }>(
+  const result = await backendFetchJson<{ status: string; granted: boolean; program_id: number }>(
     `/me/paypay/payments/${encodeURIComponent(merchantPaymentId)}`,
     { method: "GET", cache: "no-store" }
   );
+
+  if (result.status === "COMPLETED" && result.granted) {
+    redirect(`/programs/${program_id}`);
+  }
 
   return (
     <div className="space-y-3 p-3">
       <h1 className="text-lg font-semibold text-foreground">PayPay決済</h1>
       <div className="text-sm text-foreground">ステータス: {result.status}</div>
-      <div className="text-sm text-foreground">ポイント: {result.points}</div>
       <div className="text-sm text-muted-foreground">
-        {result.credited ? "ポイント付与したよ" : "まだ付与されてないっぽい"}
+        {result.status === "COMPLETED"
+          ? "決済が完了しました。番組ページに戻ってください。"
+          : "決済がまだ完了していません。しばらくお待ちください。"}
       </div>
-      <Link className="text-sm text-foreground underline" href="/mypage/points">
-        ポイント画面に戻る
+      <Link className="text-sm text-foreground underline" href={`/programs/${program_id}`}>
+        番組ページに戻る
       </Link>
     </div>
   );

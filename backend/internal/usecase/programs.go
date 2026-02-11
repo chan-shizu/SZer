@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/chan-shizu/SZer/db"
+	cfutil "github.com/chan-shizu/SZer/internal/cloudfront"
 )
 
 var ErrProgramNotFound = errors.New("program not found")
@@ -82,11 +83,12 @@ type TopProgramItem struct {
 }
 
 type ProgramsUsecase struct {
-	q *db.Queries
+	q      *db.Queries
+	signer *cfutil.VideoURLSigner
 }
 
-func NewProgramsUsecase(q *db.Queries) *ProgramsUsecase {
-	return &ProgramsUsecase{q: q}
+func NewProgramsUsecase(q *db.Queries, signer *cfutil.VideoURLSigner) *ProgramsUsecase {
+	return &ProgramsUsecase{q: q, signer: signer}
 }
 
 func (u *ProgramsUsecase) UpsertWatchHistory(ctx context.Context, userID string, programID int64, positionSeconds int32, isCompleted bool) (db.WatchHistory, error) {
@@ -183,7 +185,7 @@ func (u *ProgramsUsecase) GetProgramDetails(ctx context.Context, userID string, 
 	resp := ProgramDetail{
 		ProgramID:        program.ProgramID,
 		Title:            program.Title,
-		VideoURL:         buildVideoURL(program.VideoPath),
+		VideoURL:         u.buildVideoURL(program.VideoPath),
 		ViewCount:        int64(program.ViewCount),
 		LikeCount:        program.LikeCount,
 		Liked:            program.Liked,
@@ -460,11 +462,22 @@ func (u *ProgramsUsecase) IsUserPermittedForProgram(ctx context.Context, userID 
 
 // private functions
 
-func buildVideoURL(videoPath string) string {
+func (u *ProgramsUsecase) buildVideoURL(videoPath string) string {
 	if strings.HasPrefix(videoPath, "http://") || strings.HasPrefix(videoPath, "https://") {
 		return videoPath
 	}
 
+	// CloudFront署名付きURL（本番環境）
+	if u.signer != nil {
+		signedURL, err := u.signer.SignURL(videoPath, 2*time.Hour)
+		if err != nil {
+			log.Printf("[buildVideoURL] CloudFront署名失敗: %v", err)
+		} else {
+			return signedURL
+		}
+	}
+
+	// MinIO直接URL（開発環境）
 	base := os.Getenv("S3_VIDEO_BUCKET_ENDPOINT")
 	if base == "" {
 		return videoPath
@@ -491,6 +504,15 @@ func buildPublicFileURL(filePath string) string {
 		return filePath
 	}
 
+	// CloudFront経由（本番環境）
+	cfDomain := strings.TrimSpace(os.Getenv("CLOUDFRONT_DOMAIN"))
+	env := os.Getenv("ENV")
+	if cfDomain != "" && env != "development" {
+		path := strings.TrimLeft(filePath, "/")
+		return "https://" + cfDomain + "/" + path
+	}
+
+	// MinIO直接URL（開発環境）
 	base := os.Getenv("S3_PUBLIC_FILE_BUCKET_ENDPOINT")
 	if base == "" {
 		return filePath

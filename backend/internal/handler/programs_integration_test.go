@@ -27,7 +27,7 @@ func TestTop_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.GET("/top", h.Top)
@@ -89,7 +89,7 @@ func TestTopLiked_Integration(t *testing.T) {
 		t.Fatalf("failed to insert like: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.GET("/top/liked", h.TopLiked)
@@ -131,7 +131,7 @@ func TestTopViewed_Integration(t *testing.T) {
 		t.Fatalf("failed to insert program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.GET("/top/viewed", h.TopViewed)
@@ -170,7 +170,7 @@ func TestProgramDetails_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(""))
@@ -239,7 +239,7 @@ func TestProgramDetails_WithTagsAndPerformers_Integration(t *testing.T) {
 		t.Fatalf("failed to insert program_performers: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(""))
@@ -275,7 +275,7 @@ func TestProgramDetails_InvalidID_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	_, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(""))
@@ -295,7 +295,7 @@ func TestProgramDetails_NotFound_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	_, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.Use(MockOptionalAuth(""))
@@ -324,7 +324,7 @@ func TestProgramDetails_LimitedReleaseAndPrice_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.Use(MockOptionalAuth(""))
@@ -361,7 +361,7 @@ func TestProgramDetails_ViewCountIncrement_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.Use(MockOptionalAuth(""))
@@ -405,7 +405,7 @@ func TestProgramDetails_LimitedReleasePermission_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.Use(MockOptionalAuth(userID))
@@ -464,7 +464,7 @@ func TestListPrograms_Integration(t *testing.T) {
 		t.Fatalf("failed to insert program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.GET("/programs", h.ListPrograms)
@@ -499,7 +499,7 @@ func TestListPrograms_WithTitleFilter_Integration(t *testing.T) {
 		t.Fatalf("failed to insert program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.Default()
 	r.GET("/programs", h.ListPrograms)
@@ -542,7 +542,7 @@ func TestLikeProgram_Success_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
@@ -582,7 +582,7 @@ func TestLikeProgram_NotFound_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test user: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
@@ -599,7 +599,7 @@ func TestLikeProgram_Unauthorized_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	_, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(""))
@@ -640,7 +640,7 @@ func TestUnlikeProgram_Success_Integration(t *testing.T) {
 		t.Fatalf("failed to insert like: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
@@ -673,7 +673,7 @@ func TestUnlikeProgram_Unauthorized_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	_, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(""))
@@ -708,7 +708,7 @@ func TestUpsertWatchHistory_Insert_Integration(t *testing.T) {
 		t.Fatalf("failed to insert test program: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
@@ -758,7 +758,7 @@ func TestUpsertWatchHistory_Update_Integration(t *testing.T) {
 		t.Fatalf("failed to insert watch_history: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
@@ -786,7 +786,7 @@ func TestUpsertWatchHistory_Unauthorized_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	_, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(""))
@@ -805,7 +805,7 @@ func TestUpsertWatchHistory_InvalidBody_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	_, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth("some-user"))
@@ -823,7 +823,7 @@ func TestUpsertWatchHistory_MissingProgramID_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	_, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth("some-user"))
@@ -870,7 +870,7 @@ func TestListWatchingPrograms_Integration(t *testing.T) {
 		t.Fatalf("failed to insert watch_history: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
@@ -896,7 +896,7 @@ func TestListWatchingPrograms_Unauthorized_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	_, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(""))
@@ -936,7 +936,7 @@ func TestListLikedPrograms_Integration(t *testing.T) {
 		t.Fatalf("failed to insert like: %v", err)
 	}
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(userID))
@@ -962,7 +962,7 @@ func TestListLikedPrograms_Unauthorized_Integration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	_, q := setupTestDB(t)
 
-	programsUC := usecase.NewProgramsUsecase(q)
+	programsUC := usecase.NewProgramsUsecase(q, nil)
 	h := NewProgramsHandler(programsUC)
 	r := gin.New()
 	r.Use(MockOptionalAuth(""))

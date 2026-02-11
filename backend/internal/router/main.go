@@ -2,8 +2,10 @@ package router
 
 import (
 	"database/sql"
+	"log"
 
 	"github.com/chan-shizu/SZer/db"
+	cfutil "github.com/chan-shizu/SZer/internal/cloudfront"
 	"github.com/chan-shizu/SZer/internal/handler"
 	"github.com/chan-shizu/SZer/internal/middleware"
 	"github.com/chan-shizu/SZer/internal/usecase"
@@ -12,7 +14,13 @@ import (
 
 func NewRouter(conn *sql.DB, q *db.Queries) *gin.Engine {
 	router := gin.Default()
-	programsUC := usecase.NewProgramsUsecase(q)
+
+	signer, err := cfutil.NewVideoURLSigner()
+	if err != nil {
+		log.Fatalf("CloudFront signer初期化失敗: %v", err)
+	}
+
+	programsUC := usecase.NewProgramsUsecase(q, signer)
 	paypayUC := usecase.NewPayPayUsecase(conn, q)
 
 	requestsUC := usecase.NewRequestsUsecase(q)

@@ -1,4 +1,5 @@
 import * as cdk from "aws-cdk-lib/core";
+import * as fs from "fs";
 import * as iam from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cloudfront from "aws-cdk-lib/aws-cloudfront";
@@ -40,8 +41,9 @@ export class InfraStack extends cdk.Stack {
     const publicKey = new cloudfront.CfnPublicKey(this, "VideoPublicKey", {
       publicKeyConfig: {
         name: "szer-video-public-key",
-        encodedKey: fs.readFileSync("public_key.pem", "utf8"),
+        encodedKey: fs.readFileSync("secret/public_key.pem", "utf8"),
         comment: "Public key for signed video URLs",
+        callerReference: `${Date.now()}`,
       },
     });
 
@@ -49,7 +51,7 @@ export class InfraStack extends cdk.Stack {
     const keyGroup = new cloudfront.CfnKeyGroup(this, "SzerVideoKeyGroup", {
       keyGroupConfig: {
         name: "szer-video-key-group",
-        items: [,// ここにCloudFrontの公開鍵IDを記載（例: "Kxxxxxxxxxxxxxx"）],
+        items: [publicKey.ref],
         comment: "Key group for signed URLs for video content",
       },
     });
@@ -137,6 +139,7 @@ export class InfraStack extends cdk.Stack {
     new cdk.CfnOutput(this, "Bucket1Name", { value: bucket1.bucketName });
     new cdk.CfnOutput(this, "Bucket2Name", { value: bucket2.bucketName });
     new cdk.CfnOutput(this, "CloudFrontDistributionId", { value: cfnDistribution.ref });
+    new cdk.CfnOutput(this, "CloudFrontDomainName", { value: cfnDistribution.attrDomainName });
     new cdk.CfnOutput(this, "account", { value: this.account });
   }
 }

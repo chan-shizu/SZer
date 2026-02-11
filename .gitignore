@@ -14,8 +14,13 @@ minio
 # document
 memo.md
 documents/*
+makefile
 
 # dependencies
 node_modules
 package.json
 package-lock.json
+
+# infra
+infra/node_modules
+infra/cdk.out

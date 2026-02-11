@@ -43,7 +43,7 @@ export class InfraStack extends cdk.Stack {
         name: "szer-video-public-key",
         encodedKey: fs.readFileSync("secret/public_key.pem", "utf8"),
         comment: "Public key for signed video URLs",
-        callerReference: `${Date.now()}`,
+        callerReference: "1770783545805",
       },
     });
 

@@ -60,15 +60,9 @@ const nextConfig = {
       { protocol: "http", hostname: "host.docker.internal", port: "9000", pathname: "/**" },
       { protocol: "http", hostname: "localhost", port: "9000", pathname: "/**" },
       { protocol: "http", hostname: "127.0.0.1", port: "9000", pathname: "/**" },
-      // Back-end constructs URLs using *_ENDPOINT (can include protocol/port/path).
-      ...toRemotePatterns(process.env.S3_PUBLIC_FILE_BUCKET_ENDPOINT),
 
-      // Keep compatibility with older envs that provide only host.
-      ...toRemotePatterns(process.env.S3_PUBLIC_FILE_BUCKET_HOST),
-
-      // Not strictly needed for next/image today, but kept for parity.
-      ...toRemotePatterns(process.env.S3_VIDEO_BUCKET_ENDPOINT),
-      ...toRemotePatterns(process.env.S3_VIDEO_BUCKET_HOST),
+      // CloudFront経由の画像配信（本番環境）
+      ...toRemotePatterns(process.env.CLOUDFRONT_DOMAIN),
     ],
   },
   webpack: (config: { watchOptions?: { poll?: number; aggregateTimeout?: number } }) => {

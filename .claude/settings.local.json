@@ -8,7 +8,8 @@
       "Bash(find:*)",
       "Bash(del \"c:\\\\Users\\\\bubbl\\\\Documents\\\\development\\\\SZer\\\\backend\\\\internal\\\\usecase\\\\users.go\")",
       "Bash(docker ps:*)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(aws s3 ls:*)"
     ]
   }
 }
